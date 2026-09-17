@@ -5,10 +5,10 @@ const dbPath = process.env.LEDGEROOT_DB ?? "ledgeroot.sqlite";
 const mandate = {
   id: "demo-mandate-1",
   summary:
-    "Allow the research agent to spend up to 0.5 USDC per call on data APIs via xapi.to for 24 hours.",
+    "Allow the research agent to spend up to 0.5 USDC per call on data APIs via agent402.tools for 24 hours.",
   issuer: "0x0000000000000000000000000000000000000001",
   agentId: "agent-8004-demo",
-  counterpartyAllowlist: ["xapi.to"],
+  counterpartyAllowlist: ["agent402.tools"],
   payTo: [],
   maxAmountPerPayment: "0.5",
   maxTotalAmount: "2.0",
@@ -66,7 +66,7 @@ store.upsertMandate(mandate);
 const first = buildReceipt({
   agentId: mandate.agentId,
   mandateId: mandate.id,
-  counterparty: "xapi.to",
+  counterparty: "agent402.tools",
   endpoint: "/search",
   amount: "0.12",
   status: "paid",
@@ -78,7 +78,7 @@ store.appendReceipt(first);
 const second = buildReceipt({
   agentId: mandate.agentId,
   mandateId: mandate.id,
-  counterparty: "xapi.to",
+  counterparty: "agent402.tools",
   endpoint: "/search",
   amount: "100",
   status: "denied",
