@@ -9,7 +9,7 @@
 ## 四大功能
 
 1. **统一授权清单** — 聚合 AP2 mandate、本地策略、x402 会话
-2. **授权-执行一致性时间线** — 收据流实时渲染，越权消费自动标记
+2. **授权-执行一致性时间线** — 收据流渲染，越权标红告警，多笔支付按任务聚合
 3. **一键撤销 / 熔断** — 按下即撤销全部授权，下一笔当场拒付留痕
 4. **可验证证据包导出** — 收据 + Merkle 证明 + 锚定引用，离线三态验证
 
@@ -22,11 +22,10 @@ Next.js · Tailwind v4 · wagmi v3 · viem v2 · React Query
 ## 快速开始
 
 ```bash
-# 1. 构建并打包 ledgeroot（本仓库以 file: 依赖引用其 tarball）
-cd ../ledgeroot && npm install && npm run build && npm pack
+# 1. 安装依赖（ledgeroot 来自 npm registry）
+npm install
 
-# 2. 安装并启动仪表盘
-cd ../mandatekey && npm install
+# 2. 启动仪表盘
 npm run seed        # 写入演示 mandate + 收据
 npm run dev         # http://localhost:3000
 ```
@@ -48,6 +47,7 @@ app/
   api/mandates        授权清单 + 一键撤销
   api/verify          离线三态验证
   api/export          证据包导出
+  api/consistency     授权-执行一致性分析
 components/
   mandate-list        授权清单
   timeline            一致性时间线
@@ -61,4 +61,4 @@ deploy/monad.ts       赛事部署配置
 
 ## 依赖声明
 
-本仓库通过 `package.json` 依赖核心机芯 `ledgeroot`（本地开发用 `file:../ledgeroot/ledgeroot-0.1.0.tgz`，发布后改为 npm 包 `ledgeroot`）。这是自己的开源库，README 与仓库历史中已明确声明。
+本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.1.2`）。这是自己的开源库，README 与仓库历史中已明确声明。
