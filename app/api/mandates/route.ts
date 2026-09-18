@@ -8,7 +8,9 @@ export async function GET() {
     path: process.env.LEDGEROOT_DB ?? "ledgeroot.sqlite",
   });
   try {
-    const mandates = store.listMandates();
+    // Every mandate, revoked ones included. After a kill switch the point is to
+    // see the authorizations flip to revoked, not to watch them disappear.
+    const mandates = store.listMandateRecords();
     const receipts = store.listReceipts();
 
     // Spend per mandate is the running total the consistency pass already

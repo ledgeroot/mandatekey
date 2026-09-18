@@ -18,19 +18,52 @@ export const VERIFY_SCRIPT = `#!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { classify, epochRoot, verifyAnchor, verifyReceiptChain } from "ledgeroot";
+import {
+  classify,
+  epochRoot,
+  verifyAnchor,
+  verifyMerkleProof,
+  verifyReceiptChain,
+} from "ledgeroot";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (name) => JSON.parse(readFileSync(join(here, name), "utf8"));
+const readIfPresent = (name) => {
+  try {
+    return read(name);
+  } catch {
+    return null;
+  }
+};
 
 try {
   const receipts = read("receipts.json");
   const { keys } = read("jwks.json");
   const anchor = read("anchor.json");
+  const proofs = readIfPresent("proofs.json");
 
   const issues = [...verifyReceiptChain(receipts, keys).issues];
   if (anchor) {
     issues.push(...verifyAnchor(receipts, anchor.root, anchor.receiptCount).issues);
+  }
+
+  // A proof ties one receipt to the anchored root. That is what lets a holder
+  // of a single receipt check it without being handed the rest of the ledger,
+  // so a proof that does not reach the root is a mismatch, not missing data.
+  let checkedProofs = 0;
+  if (proofs && proofs.root) {
+    for (const receipt of receipts) {
+      const proof = proofs.proofs[receipt.id];
+      if (!proof) continue;
+      checkedProofs += 1;
+      if (!verifyMerkleProof(receipt.receiptHash, proof, proofs.root)) {
+        issues.push({
+          kind: "tampered",
+          message:
+            "receipt " + receipt.id + ": inclusion proof does not reach the anchored root",
+        });
+      }
+    }
   }
 
   const status = classify(issues);
@@ -39,6 +72,7 @@ try {
       {
         status,
         receiptCount: receipts.length,
+        checkedProofs,
         localRoot: epochRoot(receipts),
         anchoredRoot: anchor ? anchor.root : null,
         anchorCoversReceipts: anchor ? anchor.receiptCount : null,
@@ -61,6 +95,8 @@ export const VERIFY_README = `Ledgeroot evidence bundle
 
 receipts.json   Every receipt in this ledger, in append order.
 anchor.json     The on-chain epoch anchor the ledger commits to, or null.
+proofs.json     Per-receipt Merkle inclusion proofs against the anchored root,
+                or an empty list when nothing is anchored yet.
 jwks.json       The issuer's public keys, so signatures can be checked without
                 contacting the issuer.
 verify.mjs      A standalone verifier.
@@ -76,9 +112,14 @@ What a pass establishes, and what it does not
 ---------------------------------------------
 A pass means every receipt's hash matches its content, each receipt links to
 the one before it, each signature was made by a key listed in jwks.json, and —
-when anchor.json is present — the receipts recompute to the anchored root.
+when the ledger is anchored — the receipts recompute to the anchored root and
+each inclusion proof reaches it.
+
+A proof is what lets you check one receipt on its own: given the anchored root
+and a single receipt's proof, you can confirm it belongs to that epoch without
+the rest of the ledger. The files here carry both so the check is runnable as
+delivered.
 
 It does not establish that the key belongs to the party you expect, that a
 signed statement is true, or that this ledger is the issuer's whole history.
-Per-receipt Merkle inclusion proofs are not in this bundle yet.
 `;

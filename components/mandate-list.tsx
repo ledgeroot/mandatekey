@@ -1,15 +1,15 @@
 "use client";
 
-import type { Mandate } from "ledgeroot";
+import type { MandateRecord } from "ledgeroot";
 import { usePoll } from "@/lib/use-poll";
 
-interface MandateWithSpend extends Mandate {
+interface MandateRow extends MandateRecord {
   /** Paid total under this mandate, as a decimal string. */
   spent: string;
 }
 
 interface MandatesResponse {
-  mandates: MandateWithSpend[];
+  mandates: MandateRow[];
 }
 
 export function MandateList() {
@@ -25,8 +25,8 @@ export function MandateList() {
         <p className="mt-3 text-sm text-red-400">无法读取授权：{error}</p>
       ) : mandates.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500">
-          No active mandates. Every authorization has been revoked — the next payment will be
-          denied.
+          No mandates yet. Run <code className="rounded bg-zinc-900 px-1">npm run seed</code> to
+          write the demo authorization.
         </p>
       ) : (
         <ul className="mt-3 space-y-3">
@@ -37,8 +37,20 @@ export function MandateList() {
             const expired = mandate.expiresAt * 1000 < Date.now();
 
             return (
-              <li key={mandate.id} className="rounded-lg bg-zinc-900 p-3">
-                <p className="text-sm">{mandate.summary}</p>
+              <li
+                key={mandate.id}
+                className={`rounded-lg p-3 ${mandate.revoked ? "bg-zinc-900/40 opacity-60" : "bg-zinc-900"}`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p
+                    className={`text-sm ${mandate.revoked ? "text-zinc-400 line-through" : ""}`}
+                  >
+                    {mandate.summary}
+                  </p>
+                  {mandate.revoked ? (
+                    <span className="shrink-0 text-xs font-medium text-red-400">已撤销</span>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-xs text-zinc-500">
                   {mandate.agentId ?? "unbound agent"} · {mandate.maxAmountPerPayment} USDC/call
                 </p>

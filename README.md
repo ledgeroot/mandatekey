@@ -10,12 +10,12 @@
 
 ## 四大功能
 
-1. **统一授权清单** — 列出当前生效的 mandate：单笔上限、累计上限、到期时间、已用额度
+1. **统一授权清单** — 列出全部 mandate：单笔上限、累计上限、到期时间、已用额度；已撤销的灰显为「已撤销」而不是消失
 2. **授权-执行一致性时间线** — 收据流实时渲染（每 3 秒轮询），越权标红告警，多笔支付按任务聚合
 3. **一键撤销 / 熔断** — 按下即撤销全部授权，清单当场翻转，下一笔当场拒付留痕
-4. **可验证证据包导出** — 一键下载 zip：收据 + 锚定记录 + JWKS 公钥 + 独立验证脚本；解压后 `node verify.mjs` 三态验证（`verified / tampered / incomplete`）
+4. **可验证证据包导出** — 一键下载 zip：收据 + 锚定记录 + **逐张收据的 Merkle 包含证明** + JWKS 公钥 + 独立验证脚本；解压后 `node verify.mjs` 三态验证（`verified / tampered / incomplete`）
 
-> ⚠️ **与实现的边界**：本仓库目前只聚合 Ledgeroot 的 `mandates` 表——AP2 mandate 导入、本地策略清单与 x402 会话尚未汇总进这一视图。证据包给出 epoch 根与锚定记录，但**暂不含逐张收据的 Merkle 包含证明**（待 ledgeroot P1-1）。
+> ⚠️ **与实现的边界**：本仓库目前只聚合 Ledgeroot 的 `mandates` 表——AP2 mandate 导入、本地策略清单与 x402 会话尚未汇总进这一视图。包含证明只覆盖**已锚定 epoch 内**的收据；锚定之后新增的收据要等下一次锚定才进证明。
 
 ## 技术栈
 
@@ -64,7 +64,7 @@ app/
   api/receipts        收据流（只读 Ledgeroot 本地库）
   api/mandates        授权清单 + 一键撤销
   api/verify          离线三态验证
-  api/export          证据包导出
+  api/export          证据包导出（zip：收据 + 锚定 + 包含证明 + JWKS + 验证脚本）
   api/consistency     授权-执行一致性分析
   api/anchor          当前 epoch 根 + 最近一次锚定记录
 components/
@@ -81,4 +81,4 @@ deploy/monad.ts       赛事部署配置
 
 ## 依赖声明
 
-本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.3.0`）。这是自己的开源库，README 与仓库历史中已明确声明。
+本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.4.0`）。这是自己的开源库，README 与仓库历史中已明确声明。
