@@ -1,6 +1,11 @@
-import { LedgerootStore, buildReceipt } from "ledgeroot";
+import { LedgerootStore, buildReceipt, getSigningKey, loadEnv, signReceipt } from "ledgeroot";
+
+// Load the same env the dashboard reads, so the seed writes to the database
+// the dashboard opens and signs with a key it can verify.
+loadEnv(".env.local");
 
 const dbPath = process.env.LEDGEROOT_DB ?? "ledgeroot.sqlite";
+const signingKey = getSigningKey();
 
 const mandate = {
   id: "demo-mandate-1",
@@ -63,6 +68,14 @@ function deniedSegments(intent, reason) {
 const store = new LedgerootStore({ path: dbPath });
 store.upsertMandate(mandate);
 
+// Sign each receipt the way ledgeroot's pay path does. The signature covers the
+// receipt hash, so it attaches without changing the hash the chain links on.
+function record(receipt) {
+  store.appendReceipt(
+    signingKey ? { ...receipt, signature: signReceipt(receipt.receiptHash, signingKey) } : receipt,
+  );
+}
+
 const first = buildReceipt({
   agentId: mandate.agentId,
   mandateId: mandate.id,
@@ -73,7 +86,7 @@ const first = buildReceipt({
   segments: paidSegments("find recent tweets from @monad_xyz", "0.12", `0x${"a".repeat(64)}`),
   prevHash: store.lastReceipt()?.receiptHash,
 });
-store.appendReceipt(first);
+record(first);
 
 const second = buildReceipt({
   agentId: mandate.agentId,
@@ -89,9 +102,13 @@ const second = buildReceipt({
   ),
   prevHash: first.receiptHash,
 });
-store.appendReceipt(second);
+record(second);
 
 console.log(
-  JSON.stringify({ dbPath, mandate: mandate.id, receipts: [first.id, second.id] }, null, 2),
+  JSON.stringify(
+    { dbPath, mandate: mandate.id, signed: Boolean(signingKey), receipts: [first.id, second.id] },
+    null,
+    2,
+  ),
 );
 store.close();

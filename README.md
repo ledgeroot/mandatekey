@@ -37,6 +37,8 @@ npm run dev         # http://localhost:3000
 | 变量 | 说明 |
 |---|---|
 | `LEDGEROOT_DB` | Ledgeroot 本地收据库路径（默认 `ledgeroot.sqlite`） |
+| `LEDGEROOT_SIGNING_KEY` | 收据签名密钥（32 字节 hex seed）。Ledgeroot 用它签收据，MandateKey 用它验归属，两边必须一致；不设则收据验证为 `incomplete` 而非 `verified` |
+| `LEDGEROOT_DRY_RUN` | 演示用：派生确定性临时密钥，seed 与仪表盘无需配置即可对上（**禁止用于真实支付**） |
 | `NEXT_PUBLIC_ANCHOR_ADDRESS` | 锚定合约地址（用于读取 `latestRoot`） |
 | `LEDGEROOT_RPC_URL` | Monad testnet RPC（默认 `https://testnet-rpc.monad.xyz`） |
 
@@ -63,4 +65,4 @@ deploy/monad.ts       赛事部署配置
 
 ## 依赖声明
 
-本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.1.2`）。这是自己的开源库，README 与仓库历史中已明确声明。
+本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.2.1`）。这是自己的开源库，README 与仓库历史中已明确声明。
