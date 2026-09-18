@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { requestRefresh } from "@/lib/refresh-bus";
 
 export function KillSwitch() {
   const [busy, setBusy] = useState(false);
@@ -14,6 +15,9 @@ export function KillSwitch() {
       const res = await fetch("/api/mandates/revoke", { method: "POST" });
       const data = (await res.json()) as { revoked: number };
       setResult(`Revoked ${data.revoked} mandate(s). The next payment will be denied.`);
+      // The point of the kill switch is seeing the authorizations flip, so pull
+      // the views forward instead of waiting for the next poll.
+      requestRefresh();
     } catch {
       setResult("Kill switch failed.");
     } finally {

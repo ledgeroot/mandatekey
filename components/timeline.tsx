@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReceiptConsistency } from "ledgeroot";
+import { usePoll } from "@/lib/use-poll";
 
 interface ConsistencyResponse {
   items: ReceiptConsistency[];
@@ -21,15 +22,8 @@ interface TaskSummary {
 }
 
 export function Timeline() {
-  const [items, setItems] = useState<ReceiptConsistency[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/consistency")
-      .then((res) => res.json() as Promise<ConsistencyResponse>)
-      .then((data) => setItems(data.items))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error } = usePoll<ConsistencyResponse>("/api/consistency");
+  const items = useMemo(() => data?.items ?? [], [data]);
 
   const tasks = useMemo(() => {
     const map = new Map<string, TaskSummary>();
@@ -75,6 +69,8 @@ export function Timeline() {
 
       {loading ? (
         <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+      ) : error ? (
+        <p className="mt-3 text-sm text-red-400">无法读取收据：{error}</p>
       ) : items.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500">
           No receipts yet. Run an agent payment to see it here.

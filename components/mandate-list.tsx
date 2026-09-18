@@ -1,28 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { Mandate } from "ledgeroot";
+import { usePoll } from "@/lib/use-poll";
 
 interface MandatesResponse {
   mandates: Mandate[];
 }
 
 export function MandateList() {
-  const [mandates, setMandates] = useState<Mandate[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/mandates")
-      .then((res) => res.json() as Promise<MandatesResponse>)
-      .then((data) => setMandates(data.mandates))
-      .finally(() => setLoading(false));
-  }, []);
+  const { data, loading, error } = usePoll<MandatesResponse>("/api/mandates");
+  const mandates = data?.mandates ?? [];
 
   return (
     <div className="rounded-xl border border-zinc-800 p-5">
       <h2 className="text-sm font-medium text-zinc-300">授权清单 · Mandates</h2>
       {loading ? (
         <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+      ) : error ? (
+        <p className="mt-3 text-sm text-red-400">无法读取授权：{error}</p>
       ) : mandates.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-500">No active mandates.</p>
       ) : (

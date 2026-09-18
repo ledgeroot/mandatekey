@@ -1,5 +1,8 @@
 import { defineChain } from "viem";
 
+/** Block explorer used to link an anchor back to its transaction. */
+export const EXPLORER_URL = "https://testnet.monadexplorer.com";
+
 /** Monad Testnet (chainId 10143). RPC is overridable at deploy time. */
 export const monadTestnet = defineChain({
   id: 10143,
@@ -11,7 +14,7 @@ export const monadTestnet = defineChain({
   blockExplorers: {
     default: {
       name: "Monad Testnet Explorer",
-      url: "https://testnet.monadexplorer.com",
+      url: EXPLORER_URL,
     },
   },
   testnet: true,
