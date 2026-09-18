@@ -10,10 +10,12 @@
 
 ## 四大功能
 
-1. **统一授权清单** — 聚合 AP2 mandate、本地策略、x402 会话
-2. **授权-执行一致性时间线** — 收据流渲染，越权标红告警，多笔支付按任务聚合
-3. **一键撤销 / 熔断** — 按下即撤销全部授权，下一笔当场拒付留痕
-4. **可验证证据包导出** — 收据 + Merkle 证明 + 锚定引用，离线三态验证
+1. **统一授权清单** — 列出当前生效的 mandate：单笔上限、累计上限、到期时间、已用额度
+2. **授权-执行一致性时间线** — 收据流实时渲染（每 3 秒轮询），越权标红告警，多笔支付按任务聚合
+3. **一键撤销 / 熔断** — 按下即撤销全部授权，清单当场翻转，下一笔当场拒付留痕
+4. **可验证证据包导出** — 一键下载 zip：收据 + 锚定记录 + JWKS 公钥 + 独立验证脚本；解压后 `node verify.mjs` 三态验证（`verified / tampered / incomplete`）
+
+> ⚠️ **与实现的边界**：本仓库目前只聚合 Ledgeroot 的 `mandates` 表——AP2 mandate 导入、本地策略清单与 x402 会话尚未汇总进这一视图。证据包给出 epoch 根与锚定记录，但**暂不含逐张收据的 Merkle 包含证明**（待 ledgeroot P1-1）。
 
 ## 技术栈
 
@@ -66,12 +68,13 @@ app/
   api/consistency     授权-执行一致性分析
   api/anchor          当前 epoch 根 + 最近一次锚定记录
 components/
-  mandate-list        授权清单
+  mandate-list        授权清单（额度进度）
   timeline            一致性时间线
   kill-switch         一键熔断
-  anchor-status       链上锚定状态（wagmi）
-  evidence-export     证据包导出
-lib/                  wagmi 配置 + Monad 链 + 锚定 ABI
+  anchor-status       链上锚定状态与链上/本地一致性（wagmi）
+  verification-panel  离线三态验证结果
+  evidence-export     证据包导出（zip）
+lib/                  wagmi 配置 · Monad 链 · 锚定 ABI · 轮询/刷新总线 · zip 打包
 agent/demo.mjs        演示数据 seed 脚本
 deploy/monad.ts       赛事部署配置
 ```

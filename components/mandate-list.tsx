@@ -3,8 +3,13 @@
 import type { Mandate } from "ledgeroot";
 import { usePoll } from "@/lib/use-poll";
 
+interface MandateWithSpend extends Mandate {
+  /** Paid total under this mandate, as a decimal string. */
+  spent: string;
+}
+
 interface MandatesResponse {
-  mandates: Mandate[];
+  mandates: MandateWithSpend[];
 }
 
 export function MandateList() {
@@ -19,18 +24,40 @@ export function MandateList() {
       ) : error ? (
         <p className="mt-3 text-sm text-red-400">无法读取授权：{error}</p>
       ) : mandates.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">No active mandates.</p>
+        <p className="mt-3 text-sm text-zinc-500">
+          No active mandates. Every authorization has been revoked — the next payment will be
+          denied.
+        </p>
       ) : (
         <ul className="mt-3 space-y-3">
-          {mandates.map((mandate) => (
-            <li key={mandate.id} className="rounded-lg bg-zinc-900 p-3">
-              <p className="text-sm">{mandate.summary}</p>
-              <p className="mt-1 text-xs text-zinc-500">
-                {mandate.agentId ?? "unbound agent"} · {mandate.maxAmountPerPayment} USDC/call ·{" "}
-                {mandate.maxTotalAmount} USDC total
-              </p>
-            </li>
-          ))}
+          {mandates.map((mandate) => {
+            const limit = Number(mandate.maxTotalAmount);
+            const used = Number(mandate.spent);
+            const ratio = limit > 0 ? Math.min(1, used / limit) : 0;
+            const expired = mandate.expiresAt * 1000 < Date.now();
+
+            return (
+              <li key={mandate.id} className="rounded-lg bg-zinc-900 p-3">
+                <p className="text-sm">{mandate.summary}</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  {mandate.agentId ?? "unbound agent"} · {mandate.maxAmountPerPayment} USDC/call
+                </p>
+                <p className={`mt-1 text-xs ${expired ? "text-amber-400" : "text-zinc-500"}`}>
+                  {expired ? "已过期 · " : ""}
+                  有效期至 {new Date(mandate.expiresAt * 1000).toLocaleString()}
+                </p>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                  <div
+                    className={`h-full ${ratio >= 1 ? "bg-red-500" : "bg-emerald-500"}`}
+                    style={{ width: `${ratio * 100}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">
+                  已用 {mandate.spent} / {mandate.maxTotalAmount} USDC
+                </p>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

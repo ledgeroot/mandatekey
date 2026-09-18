@@ -3,6 +3,7 @@ import { EvidenceExport } from "@/components/evidence-export";
 import { KillSwitch } from "@/components/kill-switch";
 import { MandateList } from "@/components/mandate-list";
 import { Timeline } from "@/components/timeline";
+import { VerificationPanel } from "@/components/verification-panel";
 
 export default function Page() {
   return (
@@ -26,8 +27,9 @@ export default function Page() {
         </section>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-3">
         <AnchorStatus />
+        <VerificationPanel />
         <EvidenceExport />
       </div>
     </main>

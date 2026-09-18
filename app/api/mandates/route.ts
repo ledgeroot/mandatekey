@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { LedgerootStore } from "ledgeroot";
+import { LedgerootStore, analyzeConsistency } from "ledgeroot";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,23 @@ export async function GET() {
     path: process.env.LEDGEROOT_DB ?? "ledgeroot.sqlite",
   });
   try {
-    return NextResponse.json({ mandates: store.listMandates() });
+    const mandates = store.listMandates();
+    const receipts = store.listReceipts();
+
+    // Spend per mandate is the running total the consistency pass already
+    // computes; its last entry under a mandate is that mandate's total.
+    const spent = new Map<string, string>();
+    for (const item of analyzeConsistency(receipts, mandates)) {
+      const mandateId = item.receipt.mandateId;
+      if (mandateId && item.cumulativeSpent) spent.set(mandateId, item.cumulativeSpent);
+    }
+
+    return NextResponse.json({
+      mandates: mandates.map((mandate) => ({
+        ...mandate,
+        spent: spent.get(mandate.id) ?? "0",
+      })),
+    });
   } finally {
     store.close();
   }
