@@ -52,7 +52,7 @@ export function MandateList() {
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-zinc-500">
-                  {mandate.agentId ?? "unbound agent"} · {mandate.maxAmountPerPayment} USDC/call
+                  {mandate.agentId ?? "unbound agent"} · 单笔上限 {mandate.maxAmountPerPayment} USDC
                 </p>
                 <p className={`mt-1 text-xs ${expired ? "text-amber-400" : "text-zinc-500"}`}>
                   {expired ? "已过期 · " : ""}
@@ -65,7 +65,7 @@ export function MandateList() {
                   />
                 </div>
                 <p className="mt-1 text-xs text-zinc-500">
-                  已用 {mandate.spent} / {mandate.maxTotalAmount} USDC
+                  已用 {mandate.spent} / 累计上限 {mandate.maxTotalAmount} USDC
                 </p>
               </li>
             );
