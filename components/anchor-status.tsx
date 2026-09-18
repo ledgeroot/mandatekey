@@ -22,8 +22,8 @@ export function AnchorStatus() {
   const configured = ANCHOR_ADDRESS.length === 42;
   const {
     data: chainRoot,
-    isError,
-    refetch,
+    isError: rootUnreadable,
+    refetch: refetchRoot,
   } = useReadContract({
     address: ANCHOR_ADDRESS,
     abi: ANCHOR_ABI,
@@ -31,16 +31,43 @@ export function AnchorStatus() {
     chainId: monadTestnet.id,
     query: { enabled: configured },
   });
+  const {
+    data: chainEpoch,
+    isError: epochUnreadable,
+    refetch: refetchEpoch,
+  } = useReadContract({
+    address: ANCHOR_ADDRESS,
+    abi: ANCHOR_ABI,
+    functionName: "lastEpoch",
+    chainId: monadTestnet.id,
+    query: { enabled: configured },
+  });
   const { data: local } = usePoll<AnchorResponse>("/api/anchor", 5000);
 
-  // This card's chain read does not go through usePoll, so it needs the same nudge.
-  useEffect(() => onRefreshRequest(() => void refetch()), [refetch]);
+  // These chain reads do not go through usePoll, so they need the same nudge.
+  useEffect(
+    () =>
+      onRefreshRequest(() => {
+        void refetchRoot();
+        void refetchEpoch();
+      }),
+    [refetchRoot, refetchEpoch],
+  );
 
   const anchor = local?.anchor ?? null;
   // The local root is unprefixed node:crypto hex; the contract returns bytes32.
   const chainRootHex =
     typeof chainRoot === "string" ? chainRoot.replace(/^0x/, "").toLowerCase() : null;
-  const matches = Boolean(anchor && chainRootHex && anchor.root.toLowerCase() === chainRootHex);
+  const rootMatches = Boolean(anchor && chainRootHex && anchor.root.toLowerCase() === chainRootHex);
+  // The contract owns the epoch sequence, so its counter and our record should
+  // agree. A disagreement means the last anchor this ledger recorded is not the
+  // last one the contract saw — a stale record, or a second machine anchoring
+  // with the same key.
+  const chainEpochNumber = typeof chainEpoch === "bigint" ? Number(chainEpoch) : null;
+  const epochMatches = Boolean(
+    anchor && chainEpochNumber !== null && anchor.epoch === chainEpochNumber,
+  );
+  const unreadable = rootUnreadable || epochUnreadable;
 
   return (
     <div className="rounded-xl border border-zinc-800 p-5">
@@ -62,17 +89,24 @@ export function AnchorStatus() {
             {local?.receiptCount ?? "?"} receipts
           </p>
           <p className="break-all text-zinc-500">root {anchor.root}</p>
-          <p
-            className={`font-medium ${
-              isError ? "text-amber-400" : matches ? "text-emerald-400" : "text-amber-400"
-            }`}
-          >
-            {isError
-              ? "Could not read the anchor contract"
-              : matches
-                ? "✓ Matches the on-chain latestRoot"
-                : "⚠ Does not match the on-chain latestRoot"}
-          </p>
+          {unreadable ? (
+            <p className="font-medium text-amber-400">Could not read the anchor contract</p>
+          ) : (
+            <>
+              <p className={`font-medium ${rootMatches ? "text-emerald-400" : "text-amber-400"}`}>
+                {rootMatches
+                  ? "✓ Root matches the on-chain latestRoot"
+                  : "⚠ Root does not match the on-chain latestRoot"}
+              </p>
+              <p className={`font-medium ${epochMatches ? "text-emerald-400" : "text-amber-400"}`}>
+                {epochMatches
+                  ? "✓ Epoch matches the on-chain counter"
+                  : `⚠ Epoch differs from the on-chain counter (local ${anchor.epoch}, chain ${
+                      chainEpochNumber ?? "?"
+                    })`}
+              </p>
+            </>
+          )}
           {anchor.txHash ? (
             <a
               className="block break-all text-sky-400 hover:underline"
