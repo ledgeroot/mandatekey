@@ -46,6 +46,13 @@ npm run dev         # http://localhost:3000
 > 仪表盘每 3 秒轮询一次收据流，所以 agent 花钱时收据会自动出现；熔断等操作会立即
 > 触发一次刷新，不必手按 F5。
 
+> ⚠️ **`npm run seed` 写的是 `LEDGEROOT_DB` 指向的那个库，而且是追加、不清库。** 它走的是
+> dry-run 支付通道，所以那些收据的 `txHash` 是仿真值——离线验证能过，`--check-chain` 会
+> （正确地）判为不符。**如果你已经用真实支付跑过账本，不要把 seed 跑在同一个库上**，换一个
+> 库路径（`LEDGEROOT_DB=/tmp/demo.sqlite npm run seed`）。
+>
+> seed 本身不再手搓收据：它调用引擎的 `handlePay`，所以策略判定、六段、签名、哈希链都是真的。
+
 ### 环境变量
 
 | 变量 | 说明 |
@@ -76,9 +83,8 @@ components/
   evidence-export     证据包导出（zip）
 lib/                  wagmi 配置 · Monad 链 · 锚定 ABI · 轮询/刷新总线 · zip 打包
 agent/demo.mjs        演示数据 seed 脚本
-deploy/monad.ts       赛事部署配置
 ```
 
 ## 依赖声明
 
-本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.4.0`）。这是自己的开源库，README 与仓库历史中已明确声明。
+本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.5.0`）。这是自己的开源库，README 与仓库历史中已明确声明。
