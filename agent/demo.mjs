@@ -2,6 +2,7 @@ import {
   LedgerootStore,
   SETTLEMENT_PROTOCOL_X402,
   buildReceipt,
+  canonicalHash,
   contentHash,
   getSigningKey,
   loadEnv,
@@ -40,13 +41,13 @@ const PAY_TO = "0x0000000000000000000000000000000000000002";
 const fakeTxHash = (n) => `0x${n.toString(16).padStart(64, "0")}`;
 
 function paidSegments({ intent, amount, txHash, responseBody }) {
+  // The plan segment commits to the quote it was approved against, so the hash
+  // is computed from that quote rather than assembled by hand.
+  const quote = { amount, payTo: PAY_TO, endpoint: ENDPOINT };
   return {
     intent: { text: intent, timestamp: Date.now() },
     mandate: { mandateId: mandate.id, issuer: mandate.issuer, policyIntersection: [] },
-    plan: {
-      quoteHash: contentHash(`${amount}|${PAY_TO}|${ENDPOINT}`),
-      quote: { amount, payTo: PAY_TO, endpoint: ENDPOINT },
-    },
+    plan: { quoteHash: `0x${canonicalHash(quote)}`, quote },
     call: {
       policyResults: [
         { policyId: "counterparty-whitelist", decision: { allow: true } },
@@ -65,13 +66,11 @@ function paidSegments({ intent, amount, txHash, responseBody }) {
 }
 
 function deniedSegments({ intent, amount, reason }) {
+  const quote = { amount, payTo: PAY_TO, endpoint: ENDPOINT };
   return {
     intent: { text: intent, timestamp: Date.now() },
     mandate: { mandateId: mandate.id, issuer: mandate.issuer, policyIntersection: [] },
-    plan: {
-      quoteHash: contentHash(`${amount}|${PAY_TO}|${ENDPOINT}`),
-      quote: { amount, payTo: PAY_TO, endpoint: ENDPOINT },
-    },
+    plan: { quoteHash: `0x${canonicalHash(quote)}`, quote },
     call: {
       policyResults: [{ policyId: "amount-limit", decision: { allow: false, reason } }],
     },

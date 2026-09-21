@@ -47,16 +47,23 @@ try {
     issues.push(...verifyAnchor(receipts, anchor.root, anchor.receiptCount).issues);
   }
 
-  // A proof ties one receipt to the anchored root. That is what lets a holder
-  // of a single receipt check it without being handed the rest of the ledger,
-  // so a proof that does not reach the root is a mismatch, not missing data.
+  // Each proof ties one receipt to the anchored root, which is what lets the
+  // holder of a single receipt check it without the rest of the ledger. A proof
+  // that does not reach the root is a mismatch, not missing data.
   let checkedProofs = 0;
-  if (proofs && proofs.root) {
-    for (const receipt of receipts) {
-      const proof = proofs.proofs[receipt.id];
-      if (!proof) continue;
+  if (anchor && Array.isArray(proofs)) {
+    const byId = new Map(receipts.map((receipt) => [receipt.id, receipt]));
+    for (const proof of proofs) {
+      const receipt = byId.get(proof.receiptId);
+      if (!receipt) {
+        issues.push({
+          kind: "tampered",
+          message: "inclusion proof names a receipt that is not in the bundle: " + proof.receiptId,
+        });
+        continue;
+      }
       checkedProofs += 1;
-      if (!verifyMerkleProof(receipt.receiptHash, proof, proofs.root)) {
+      if (!verifyMerkleProof(receipt.receiptHash, proof, anchor.root)) {
         issues.push({
           kind: "tampered",
           message:
@@ -95,8 +102,9 @@ export const VERIFY_README = `Ledgeroot evidence bundle
 
 receipts.json   Every receipt in this ledger, in append order.
 anchor.json     The on-chain epoch anchor the ledger commits to, or null.
-proofs.json     Per-receipt Merkle inclusion proofs against the anchored root,
-                or an empty list when nothing is anchored yet.
+proofs.json     One Merkle inclusion proof per receipt the anchor covers, each
+                checked against anchor.json's root. Empty when nothing is
+                anchored yet.
 jwks.json       The issuer's public keys, so signatures can be checked without
                 contacting the issuer.
 verify.mjs      A standalone verifier.
@@ -113,7 +121,7 @@ What a pass establishes, and what it does not
 A pass means every receipt's hash matches its content, each receipt links to
 the one before it, each signature was made by a key listed in jwks.json, and —
 when the ledger is anchored — the receipts recompute to the anchored root and
-each inclusion proof reaches it.
+every inclusion proof reaches it.
 
 A proof is what lets you check one receipt on its own: given the anchored root
 and a single receipt's proof, you can confirm it belongs to that epoch without

@@ -5,7 +5,6 @@ import {
   getSigningKey,
   jwksOf,
   merkleProof,
-  type MerkleProof,
   type Receipt,
 } from "ledgeroot";
 import { VERIFY_README, VERIFY_SCRIPT } from "@/lib/verify-bundle";
@@ -14,26 +13,34 @@ import { createZip } from "@/lib/zip";
 export const dynamic = "force-dynamic";
 
 /**
- * Inclusion proofs for the anchored epoch.
+ * An inclusion proof for every receipt the latest anchor covers, shaped the
+ * same way ledgeroot's own export shapes them: a flat list keyed by receipt id,
+ * each verified against the anchor's root.
  *
- * An anchor covers a prefix of the ledger. For each receipt in that prefix,
- * prove it belongs to the anchored root, so a holder of one receipt can check
- * it against the anchored root without being handed the rest of the ledger.
- * Without an anchor there is no root to prove against, so the proof list is
- * empty rather than invented.
+ * A root alone can only be checked by whoever holds every leaf; a proof lets
+ * the holder of one receipt show it belongs to the anchored epoch without the
+ * rest of the ledger. Without an anchor there is no root to prove against, so
+ * the list is empty rather than invented.
  */
-function proofsFor(
+function inclusionProofs(
   anchor: { root: string; receiptCount: number | null } | null,
   receipts: Receipt[],
-): Record<string, MerkleProof> {
-  if (!anchor || anchor.receiptCount === null) return {};
+): Array<{ receiptId: string; index: number; size: number; path: string[] }> {
+  if (!anchor || anchor.receiptCount === null) return [];
   const epoch = receipts.slice(0, anchor.receiptCount);
   const hashes = epoch.map((receipt) => receipt.receiptHash);
-  return Object.fromEntries(
-    epoch.map((receipt, index) => [receipt.id, merkleProof(hashes, index)]),
-  );
+  return epoch.map((receipt, index) => ({
+    receiptId: receipt.id,
+    ...merkleProof(hashes, index),
+  }));
 }
 
+/**
+ * The evidence bundle: everything a third party needs to check this ledger
+ * without installing our software or calling anything of ours. It ships with
+ * the verifier, so "take the evidence away and check it yourself" is a command
+ * the recipient can actually run.
+ */
 export async function GET() {
   const store = new LedgerootStore({
     path: process.env.LEDGEROOT_DB ?? "ledgeroot.sqlite",
@@ -49,15 +56,7 @@ export async function GET() {
       { name: "anchor.json", content: JSON.stringify(anchor ?? null, null, 2) },
       {
         name: "proofs.json",
-        content: JSON.stringify(
-          {
-            root: anchor?.root ?? null,
-            size: anchor?.receiptCount ?? 0,
-            proofs: proofsFor(anchor, receipts),
-          },
-          null,
-          2,
-        ),
+        content: JSON.stringify(inclusionProofs(anchor, receipts), null, 2),
       },
       { name: "jwks.json", content: JSON.stringify(jwks, null, 2) },
       {
