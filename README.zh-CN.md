@@ -17,7 +17,7 @@
 
 ---
 
-MandateKey 是 [Ledgeroot](../ledgeroot) 的**仪表盘那一半**：消费引擎写出的证据流，在一屏里回答用户的三个问题——**哪些 agent 被授权、能花多少、到何时**——然后让用户一键切断，并把证据带走。
+MandateKey 是 [Ledgeroot](https://github.com/ledgeroot/ledgeroot) 的**仪表盘那一半**：消费引擎写出的证据流，在一屏里回答用户的三个问题——**哪些 agent 被授权、能花多少、到何时**——然后让用户一键切断，并把证据带走。
 
 > 钱包管钱。MandateKey 管**谁被允许动钱**，以及**钱花出去后如何向任何人证明**。
 
@@ -75,7 +75,7 @@ cd ../ledgeroot && npm run anchor -- --db ./ledgeroot.sqlite
 ## 为什么需要 MandateKey？
 
 - **一屏，而不是每个协议一个孤岛。** 引擎负责写授权与收据；这里是人真正能看到它们的地方。
-- **写入侧握钥匙。** 锚定与支付签名都在 [Ledgeroot](../ledgeroot)。本仓库只持有**收据签名种子**（验归属需要它），从不持有能动钱的那把钥匙。
+- **写入侧握钥匙。** 锚定与支付签名都在 [Ledgeroot](https://github.com/ledgeroot/ledgeroot)。本仓库只持有**收据签名种子**（验归属需要它），从不持有能动钱的那把钥匙。
 - **撤销必须是可见的。** 按下熔断，每一行翻成 `已撤销`，下一笔支付被拒并留痕——用户是**看见**翻转，而不是从一个空列表里**推断**出来。
 - **证据是能交出去的。** 导出的是一个 zip，第三方用 `node verify.mjs` 就能验——不装我们的任何东西，也不连回我们。
 - **它不粉饰数据。** 已撤销的授权仍然列在那里；越权的支付标红；验不了的事情报 `incomplete` 而不是 `verified`——面板呈现的是**引擎的结论**，不是它自己的意见。
@@ -85,7 +85,7 @@ cd ../ledgeroot && npm run anchor -- --db ./ledgeroot.sqlite
 
 ## 它处在什么位置
 
-| | [Ledgeroot](../ledgeroot) —— 机芯 | MandateKey —— 表盘 |
+| | [Ledgeroot](https://github.com/ledgeroot/ledgeroot) —— 机芯 | MandateKey —— 表盘 |
 |---|---|---|
 | 角色 | **写入侧**：授权、fail-closed 策略、收据、锚定 | **读取侧**：授权清单、一致性视图、撤销、证据导出 |
 | 跑在 | agent 的 MCP 宿主里，挨着钱包 | 浏览器里，挨着人 |
@@ -120,7 +120,7 @@ node verify.mjs     # 退出码 0 verified · 1 tampered · 2 incomplete · 3 �
 
 ## 三态验证
 
-三态验证面板原样呈现引擎的验证结论；这三个状态的定义属于引擎，完整说明见[引擎 README](../ledgeroot/README.zh-CN.md)。
+三态验证面板原样呈现引擎的验证结论；这三个状态的定义属于引擎，完整说明见[引擎 README](https://github.com/ledgeroot/ledgeroot/blob/main/README.zh-CN.md)。
 
 | 状态 | 含义 |
 |---|---|
@@ -220,13 +220,13 @@ agent/demo.mjs        演示数据 seed，走引擎
 
 ## 依赖声明
 
-本仓库通过 `package.json` 依赖 **`ledgeroot`** npm 包，那是**我们自己的开源库**（源码：[../ledgeroot](../ledgeroot)）。它在 `package.json` 里声明，其 README 与仓库历史也已写明。这里没有任何东西是对第三方引擎的重新包装。
+本仓库通过 `package.json` 依赖 **`ledgeroot`** npm 包，那是**我们自己的开源库**（源码：[ledgeroot](https://github.com/ledgeroot/ledgeroot)）。它在 `package.json` 里声明，其 README 与仓库历史也已写明。这里没有任何东西是对第三方引擎的重新包装。
 
 ---
 
 ## 许可证
 
-**本仓库尚未声明许可证。** 它读取的引擎是 [MIT](../ledgeroot/LICENSE)。
+**本仓库尚未声明许可证。** 它读取的引擎是 [MIT](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE)。
 
 <div align="center">
 
@@ -234,7 +234,7 @@ agent/demo.mjs        演示数据 seed，走引擎
 
 **[把它跑起来，自己验收据。](#快速开始)**
 
-📖 **[English README](./README.md)** · ⚙️ **[机芯](../ledgeroot)** · 🗺️ **[Roadmap](../ledgeroot/docs/roadmap.md)** · 🛡️ **[威胁全景](../ledgeroot/docs/threat-landscape.md)**
+📖 **[English README](./README.md)** · ⚙️ **[机芯](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[威胁全景](https://github.com/ledgeroot/ledgeroot/blob/main/docs/threat-landscape.md)**
 
 <sub>无后端 · 无遥测 · 无私钥 · 证据无需依赖我们即可验证</sub>
 

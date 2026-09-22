@@ -17,7 +17,7 @@
 
 ---
 
-MandateKey is the **dashboard half** of [Ledgeroot](../ledgeroot): it consumes the evidence stream the engine writes and answers the user's three questions on one screen — **which agents are authorized, how much they may spend, and until when** — then lets the user cut everything off and walk away with the evidence.
+MandateKey is the **dashboard half** of [Ledgeroot](https://github.com/ledgeroot/ledgeroot): it consumes the evidence stream the engine writes and answers the user's three questions on one screen — **which agents are authorized, how much they may spend, and until when** — then lets the user cut everything off and walk away with the evidence.
 
 > A wallet holds the money. MandateKey holds **who is allowed to move it**, and **how to prove what moved afterwards**.
 
@@ -75,7 +75,7 @@ Until that runs, the Anchor panel says the ledger is not anchored. **It does not
 ## Why MandateKey?
 
 - **One screen, not one silo per protocol.** The engine writes authorizations and receipts; this is where a human can actually see them.
-- **The write side keeps the keys.** Anchoring and payment signing live in [Ledgeroot](../ledgeroot). This repository holds the **receipt-signing seed** (it needs it to check attribution) and never the key that moves money.
+- **The write side keeps the keys.** Anchoring and payment signing live in [Ledgeroot](https://github.com/ledgeroot/ledgeroot). This repository holds the **receipt-signing seed** (it needs it to check attribution) and never the key that moves money.
 - **Revocation has to be visible.** Pressing the kill switch flips every row to `已撤销` and the next payment is denied and recorded — the user sees the flip, rather than inferring it from an empty list.
 - **Evidence you can hand over.** The export is a zip a third party verifies with `node verify.mjs`, without installing anything of ours and without calling us.
 - **It does not flatter the data.** Revoked authorizations stay listed. An over-authorized payment is flagged red. A verifier that cannot check something says `incomplete` instead of `verified` — the panel renders the engine's verdict rather than its own opinion.
@@ -85,7 +85,7 @@ Until that runs, the Anchor panel says the ledger is not anchored. **It does not
 
 ## Where it sits
 
-| | [Ledgeroot](../ledgeroot) — the engine | MandateKey — the dashboard |
+| | [Ledgeroot](https://github.com/ledgeroot/ledgeroot) — the engine | MandateKey — the dashboard |
 |---|---|---|
 | Role | **write side**: authorizations, fail-closed policy, receipts, anchoring | **read side**: authorization list, consistency view, revocation, evidence export |
 | Runs | in the agent's MCP host, next to the wallet | in the browser, next to the human |
@@ -120,7 +120,7 @@ A pass means every receipt's hash matches its content, each receipt links to the
 
 ## Tri-state verification
 
-The Verify panel renders the engine's verifier verbatim; the definitions belong to it and are worth reading in full in the [engine README](../ledgeroot#tri-state-verification-offline-first).
+The Verify panel renders the engine's verifier verbatim; the definitions belong to it and are worth reading in full in the [engine README](https://github.com/ledgeroot/ledgeroot#tri-state-verification-offline-first).
 
 | Status | Meaning |
 |---|---|
@@ -220,13 +220,13 @@ agent/demo.mjs        the demo seed, driven through the engine
 
 ## Dependency
 
-This repository depends on the **`ledgeroot`** npm package, which is **our own open-source library** (source: [../ledgeroot](../ledgeroot)). It is declared in `package.json`, and its README and history say so. Nothing here is a repackaged third-party engine.
+This repository depends on the **`ledgeroot`** npm package, which is **our own open-source library** (source: [ledgeroot](https://github.com/ledgeroot/ledgeroot)). It is declared in `package.json`, and its README and history say so. Nothing here is a repackaged third-party engine.
 
 ---
 
 ## License
 
-**No license is declared in this repository yet.** The engine it reads is [MIT](../ledgeroot/LICENSE).
+**No license is declared in this repository yet.** The engine it reads is [MIT](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE).
 
 <div align="center">
 
@@ -234,7 +234,7 @@ This repository depends on the **`ledgeroot`** npm package, which is **our own o
 
 **[Run it and check the evidence yourself.](#get-started)**
 
-📖 **[中文 README](./README.zh-CN.md)** · ⚙️ **[The engine](../ledgeroot)** · 🗺️ **[Roadmap](../ledgeroot/docs/roadmap.md)** · 🛡️ **[Threat landscape](../ledgeroot/docs/threat-landscape.md)**
+📖 **[中文 README](./README.zh-CN.md)** · ⚙️ **[The engine](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[Threat landscape](https://github.com/ledgeroot/ledgeroot/blob/main/docs/threat-landscape.md)**
 
 <sub>no backend · no telemetry · no private key · the evidence verifies without us</sub>
 
