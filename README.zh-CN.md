@@ -234,7 +234,7 @@ agent/demo.mjs        演示数据 seed，走引擎
 
 **[把它跑起来，自己验收据。](#快速开始)**
 
-📖 **[English README](./README.md)** · ⚙️ **[机芯](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[威胁全景](https://github.com/ledgeroot/ledgeroot/blob/main/docs/threat-landscape.md)**
+📖 **[English README](./README.md)** · ⚙️ **[机芯](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[威胁全景](https://github.com/ledgeroot/ledgeroot/blob/main/docs/landscape.md)**
 
 <sub>无后端 · 无遥测 · 无私钥 · 证据无需依赖我们即可验证</sub>
 

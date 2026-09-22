@@ -234,7 +234,7 @@ This repository depends on the **`ledgeroot`** npm package, which is **our own o
 
 **[Run it and check the evidence yourself.](#get-started)**
 
-📖 **[中文 README](./README.zh-CN.md)** · ⚙️ **[The engine](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[Threat landscape](https://github.com/ledgeroot/ledgeroot/blob/main/docs/threat-landscape.md)**
+📖 **[中文 README](./README.zh-CN.md)** · ⚙️ **[The engine](https://github.com/ledgeroot/ledgeroot)** · 🗺️ **[Roadmap](https://github.com/ledgeroot/ledgeroot/blob/main/docs/roadmap.md)** · 🛡️ **[Landscape](https://github.com/ledgeroot/ledgeroot/blob/main/docs/landscape.md)**
 
 <sub>no backend · no telemetry · no private key · the evidence verifies without us</sub>
 
