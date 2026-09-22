@@ -1,90 +1,241 @@
+<div align="center">
+
 # MandateKey
 
-> **行业造好了锁，没人造钥匙圈；造好了刹车，没人造黑匣子。**
+### The keyring for agent authorizations — who can spend, how much, until when
 
-用户侧「钥匙圈」仪表盘。消费 [Ledgeroot](../ledgeroot) 产出的证据流，让用户一屏看清"哪个 agent、能花多少、到何时"，并在出问题时一键撤销、把证据带走。
+**The industry built the locks; nobody built the keyring. It built the brakes; nobody built the black box.**
 
-> 钱包管钱，MandateKey 管"谁被允许动钱"，以及"钱花出去后如何向任何人证明"。
+![Next.js](https://img.shields.io/badge/next.js-16-black)
+![Storage](https://img.shields.io/badge/storage-local%20SQLite-informational)
+![Backend](https://img.shields.io/badge/backend-none-informational)
+![Hosting](https://img.shields.io/badge/hosting-local%20only-lightgrey)
+
+**English** · [中文](./README.zh-CN.md)
+
+</div>
 
 ---
 
-## 四大功能
+MandateKey is the **dashboard half** of [Ledgeroot](../ledgeroot): it consumes the evidence stream the engine writes and answers the user's three questions on one screen — **which agents are authorized, how much they may spend, and until when** — then lets the user cut everything off and walk away with the evidence.
 
-1. **统一授权清单** — 列出全部 mandate：单笔上限、累计上限、到期时间、已用额度；已撤销的灰显为「已撤销」而不是消失
-2. **授权-执行一致性时间线** — 收据流实时渲染（每 3 秒轮询），越权标红告警，多笔支付按任务聚合
-3. **一键撤销 / 熔断** — 按下即撤销全部授权，清单当场翻转，下一笔当场拒付留痕
-4. **可验证证据包导出** — 一键下载 zip：收据 + 锚定记录 + **逐张收据的 Merkle 包含证明** + JWKS 公钥 + 独立验证脚本；解压后 `node verify.mjs` 三态验证（`verified / tampered / incomplete`）
+> A wallet holds the money. MandateKey holds **who is allowed to move it**, and **how to prove what moved afterwards**.
 
-> ⚠️ **与实现的边界**：本仓库目前只聚合 Ledgeroot 的 `mandates` 表——AP2 mandate 导入、本地策略清单与 x402 会话尚未汇总进这一视图。包含证明只覆盖**已锚定 epoch 内**的收据；锚定之后新增的收据要等下一次锚定才进证明。
+It reads the local Ledgeroot SQLite database and the anchor contract. **There is no backend and no server**: the browser talks to Next.js route handlers running on your machine, which read SQLite and an RPC endpoint. Nothing leaves the machine.
 
-## 技术栈
+---
 
-Next.js · Tailwind v4 · wagmi v3 · viem v2 · React Query
+## See it
 
-数据源：本地 Ledgeroot SQLite（只读）+ 链上锚定事件，无后端、零服务器。
+Five panels, against a ledger that has one real settlement in it:
 
-## 快速开始
+| Panel | What it shows |
+|---|---|
+| **Mandates** | every authorization with its per-payment ceiling, cumulative ceiling, expiry and spend so far. A revoked one **stays on screen and reads `已撤销`** — a row that vanishes tells the user less than one that is visibly dead |
+| **Timeline** | the receipt stream, with over-authorization flagged red, denials carrying the policy that stopped them, and payments grouped by task (`N payments · total · N blocked`) |
+| **Anchor** | the local anchor record next to the chain's `latestRoot` **and** `lastEpoch` — two independent verdicts, because a matching root with a stale epoch is exactly how a record drifts |
+| **Verify** | `verified` / `tampered` / `incomplete`, with the issues that produced the verdict |
+| **Evidence** | one zip: receipts + anchor record + per-receipt inclusion proofs + JWKS + a verifier you can run |
+
+The ledger views poll every 3 seconds, the anchor card every 5, so receipts appear as the agent spends. Actions are not made to wait for a poll: the kill switch pulls every view forward the moment it lands.
+
+---
+
+## Get started
+
+### 1. Run it offline (no wallet, no network)
 
 ```bash
-# 1. 安装依赖（ledgeroot 来自 npm registry）
 npm install
-
-# 2. 写入演示 mandate + 收据
-npm run seed
-
-# 3. （可选）把当前 epoch 根锚定到 Monad testnet
-#    在 ledgeroot 仓库执行——锚定私钥只留在写侧，本仓库不持有
-cd ../ledgeroot && npm run anchor -- --db ./ledgeroot.sqlite && cd ../mandatekey
-
-# 4. 启动仪表盘
+npm run seed        # writes a demo authorization + receipts through the engine's dry-run rail
 npm run dev         # http://localhost:3000
 ```
 
-> 跑完第 3 步，首页「链上锚定」卡片会显示本地锚定记录与链上 `latestRoot` 是否一致；
-> 没跑第 3 步则显示「尚未锚定」——它不会伪造一个根。
+### 2. Point it at a ledger that has real payments
+
+```bash
+# Same database the engine writes to
+LEDGEROOT_DB=/absolute/path/ledgeroot.sqlite npm run dev
+```
+
+Anchoring lives on the **write** side, in the engine — the anchor key is never put in this repository:
+
+```bash
+cd ../ledgeroot && npm run anchor -- --db ./ledgeroot.sqlite
+```
+
+Until that runs, the Anchor panel says the ledger is not anchored. **It does not invent a root.**
+
+> ⚠️ **`npm run seed` appends to whatever `LEDGEROOT_DB` points at; it does not clear the database.** It uses the dry-run payment rail, so those receipts carry synthetic transaction hashes: offline verification holds, `--check-chain` will (correctly) disagree with them. **If you already have real payments in that ledger, do not seed into it** — pass a different path (`LEDGEROOT_DB=/tmp/demo.sqlite npm run seed`).
 >
-> 仪表盘每 3 秒轮询一次收据流，所以 agent 花钱时收据会自动出现；熔断等操作会立即
-> 触发一次刷新，不必手按 F5。
+> The seed does not hand-build receipts. It calls the engine's `handlePay`, so policy verdicts, both quote and delivery segments, the signature and the hash chain are all produced the way the engine produces them. Only the settlement is simulated.
 
-> ⚠️ **`npm run seed` 写的是 `LEDGEROOT_DB` 指向的那个库，而且是追加、不清库。** 它走的是
-> dry-run 支付通道，所以那些收据的 `txHash` 是仿真值——离线验证能过，`--check-chain` 会
-> （正确地）判为不符。**如果你已经用真实支付跑过账本，不要把 seed 跑在同一个库上**，换一个
-> 库路径（`LEDGEROOT_DB=/tmp/demo.sqlite npm run seed`）。
->
-> seed 本身不再手搓收据：它调用引擎的 `handlePay`，所以策略判定、六段、签名、哈希链都是真的。
+---
 
-### 环境变量
+## Why MandateKey?
 
-| 变量 | 说明 |
+- **One screen, not one silo per protocol.** The engine writes authorizations and receipts; this is where a human can actually see them.
+- **The write side keeps the keys.** Anchoring and payment signing live in [Ledgeroot](../ledgeroot). This repository holds the **receipt-signing seed** (it needs it to check attribution) and never the key that moves money.
+- **Revocation has to be visible.** Pressing the kill switch flips every row to `已撤销` and the next payment is denied and recorded — the user sees the flip, rather than inferring it from an empty list.
+- **Evidence you can hand over.** The export is a zip a third party verifies with `node verify.mjs`, without installing anything of ours and without calling us.
+- **It does not flatter the data.** Revoked authorizations stay listed. An over-authorized payment is flagged red. A verifier that cannot check something says `incomplete` instead of `verified` — the panel renders the engine's verdict rather than its own opinion.
+- **No backend, no telemetry, no account.** Read-only against the ledger, apart from the revocation flag.
+
+---
+
+## Where it sits
+
+| | [Ledgeroot](../ledgeroot) — the engine | MandateKey — the dashboard |
+|---|---|---|
+| Role | **write side**: authorizations, fail-closed policy, receipts, anchoring | **read side**: authorization list, consistency view, revocation, evidence export |
+| Runs | in the agent's MCP host, next to the wallet | in the browser, next to the human |
+| Holds | the payment key and the anchor key | the receipt-signing seed, and no money key |
+
+> ⚠️ **Aggregation is partial.** This dashboard reads the engine's `mandates` table. AP2-imported authorizations, the local policy inventory and x402 sessions are **not** yet folded into one view — see [Known limits](#known-limits).
+
+---
+
+## The evidence bundle
+
+One click produces `ledgeroot-evidence.zip`:
+
+| File | Contents |
 |---|---|
-| `LEDGEROOT_DB` | Ledgeroot 本地收据库路径（默认 `ledgeroot.sqlite`） |
-| `LEDGEROOT_SIGNING_KEY` | 收据签名密钥（32 字节 hex seed）。Ledgeroot 用它签收据，MandateKey 用它验归属，两边必须一致；不设则收据验证为 `incomplete` 而非 `verified` |
-| `LEDGEROOT_DRY_RUN` | 演示用：派生确定性临时密钥，seed 与仪表盘无需配置即可对上（**禁止用于真实支付**） |
-| `NEXT_PUBLIC_ANCHOR_ADDRESS` | 锚定合约地址（用于读取 `latestRoot`） |
-| `LEDGEROOT_RPC_URL` | Monad testnet RPC（默认 `https://testnet-rpc.monad.xyz`） |
+| `receipts.json` | every receipt, in append order |
+| `anchor.json` | the on-chain epoch anchor, or `null` |
+| `proofs.json` | one Merkle inclusion proof per receipt the anchor covers, as `{receiptId, index, size, path}` |
+| `jwks.json` | the issuer's public keys, so signatures can be checked without calling home |
+| `epoch-root.json` | the current root over the whole ledger |
+| `verify.mjs` | a standalone verifier |
+| `README.txt` | what a pass does and does not establish |
 
-## 仓库结构
-
+```bash
+npm install ledgeroot
+node verify.mjs     # exit 0 verified · 1 tampered · 2 incomplete · 3 unreadable
 ```
+
+A pass means every receipt's hash matches its content, each receipt links to the one before it, each signature was made by a key in `jwks.json`, and — when anchored — the receipts recompute to the anchored root and every inclusion proof reaches it. Tamper with a single proof path and it reports `tampered` naming that receipt, while the chain and anchor checks still pass.
+
+---
+
+## Tri-state verification
+
+The Verify panel renders the engine's verifier verbatim; the definitions belong to it and are worth reading in full in the [engine README](../ledgeroot#tri-state-verification-offline-first).
+
+| Status | Meaning |
+|---|---|
+| `verified` | every check passed |
+| `tampered` | **bytes were checked and do not match** |
+| `incomplete` | **evidence is missing or unobtainable** — not the same as tampering, and never a pass |
+
+The panel exists because a verdict nobody can see is not a selling point. It shows the issues that produced the status, not just the colour.
+
+---
+
+## Anchor status
+
+Two verdicts, from two independent contracts reads:
+
+- **Root** — the local anchor record's root against the chain's `latestRoot`.
+- **Epoch** — the local anchor's epoch against the chain's `lastEpoch`.
+
+A matching root with a mismatched epoch means the last anchor this ledger recorded is not the last one the contract saw: a stale record, or a second machine anchoring with the same key. That is worth showing precisely because it is the shape of drift that otherwise goes unnoticed.
+
+---
+
+## API routes
+
+| Route | What it does |
+|---|---|
+| `GET /api/mandates` | every authorization with its revocation state, plus spend so far |
+| `POST /api/mandates/revoke` | revoke one (`mandateId`) or all (the kill switch) |
+| `GET /api/receipts` | the raw receipt stream |
+| `GET /api/consistency` | receipts re-checked against the mandate that authorized them |
+| `GET /api/verify` | the engine's tri-state verdict |
+| `GET /api/anchor` | current epoch root + the latest anchor record |
+| `GET /api/export` | the evidence bundle as a zip |
+
+---
+
+## Environment variables
+
+| Variable | Meaning |
+|---|---|
+| `LEDGEROOT_DB` | path to the Ledgeroot SQLite database (default `ledgeroot.sqlite`) |
+| `LEDGEROOT_SIGNING_KEY` | the receipt-signing seed (32-byte hex). The engine signs with it, this dashboard checks attribution against it, so **both sides must agree**. Unset → receipts verify as `incomplete` |
+| `LEDGEROOT_DRY_RUN` | `true` derives a deterministic throwaway key, so the seed and the dashboard line up with no secret to manage (**never for real payments**) |
+| `NEXT_PUBLIC_ANCHOR_ADDRESS` | anchor contract address, read by the browser for the Anchor panel |
+| `LEDGEROOT_RPC_URL` | Monad testnet RPC (default `https://testnet-rpc.monad.xyz`) |
+
+---
+
+## Known limits
+
+The honest section. These are limits of the **current implementation**, not a repudiation of the design intent.
+
+| Limit | Current state |
+|---|---|
+| **Aggregation is partial** | Only the engine's `mandates` table is read. AP2-imported authorizations, local policy and x402 sessions are not folded into the same view |
+| **No issuance UI** | Authorizations are signed on the write side (`ledgeroot_mandate_sign`). The dashboard can revoke, but it cannot issue — "one sentence and one confirm key" is the target and is **not built here yet** |
+| **ERC-8004 is not wired up** | There is no agent card and no reputation view. The engine stores an `agentId` field; nothing validates or displays it |
+| **No test suite in this repository** | `npm run typecheck` and `npm run build` only. The engine carries the tests (106 of them) |
+| **Runs locally only** | There is no hosted instance, so evaluating it means running it. It also means the browser and the database are expected to be on the same machine |
+| **Inclusion proofs cover one epoch** | Proofs are issued for the receipts the latest anchor covers. Receipts appended afterwards wait for the next anchor |
+| **It holds the signing seed** | Checking attribution means deriving the issuer's public key, and the engine's API takes a seed to do that. A reader-only deployment should hold only the public half |
+| **No license declared in this repository** | The engine it reads is MIT |
+| **Read-only, with one exception** | The dashboard writes exactly one thing: the local `revoked` flag behind the kill switch |
+
+---
+
+## Repository layout
+
+```text
 app/
-  page.tsx            仪表盘首页
-  api/receipts        收据流（只读 Ledgeroot 本地库）
-  api/mandates        授权清单 + 一键撤销
-  api/verify          离线三态验证
-  api/export          证据包导出（zip：收据 + 锚定 + 包含证明 + JWKS + 验证脚本）
-  api/consistency     授权-执行一致性分析
-  api/anchor          当前 epoch 根 + 最近一次锚定记录
+  page.tsx            the dashboard
+  api/mandates        authorization list + revocation
+  api/receipts        the raw receipt stream
+  api/consistency     authorization-vs-execution analysis
+  api/verify          tri-state verification
+  api/export          the evidence bundle (zip)
+  api/anchor          epoch root + latest anchor record
 components/
-  mandate-list        授权清单（额度进度）
-  timeline            一致性时间线
-  kill-switch         一键熔断
-  anchor-status       链上锚定状态与链上/本地一致性（wagmi）
-  verification-panel  离线三态验证结果
-  evidence-export     证据包导出（zip）
-lib/                  wagmi 配置 · Monad 链 · 锚定 ABI · 轮询/刷新总线 · zip 打包
-agent/demo.mjs        演示数据 seed 脚本
+  mandate-list        authorizations, spend progress, revoked state
+  timeline            receipt stream, task grouping, violation flags
+  kill-switch         revoke everything, immediately
+  anchor-status       on-chain anchoring + both consistency verdicts (wagmi)
+  verification-panel  the tri-state verdict
+  evidence-export     the zip download
+lib/
+  wagmi.ts chains.ts  wallet/chain config + explorer link
+  anchor.ts           anchor ABI + address
+  use-poll.ts         interval polling for every view
+  refresh-bus.ts      makes an action refresh the views at once
+  zip.ts              a stored-entry ZIP writer (no dependency)
+  verify-bundle.ts    the verifier shipped inside the bundle
+  issuer-keys.ts      the public half of the signing key
+agent/demo.mjs        the demo seed, driven through the engine
 ```
 
-## 依赖声明
+---
 
-本仓库通过 `package.json` 依赖 npm 包 `ledgeroot`（`^0.5.0`）。这是自己的开源库，README 与仓库历史中已明确声明。
+## Dependency
+
+This repository depends on the **`ledgeroot`** npm package, which is **our own open-source library** (source: [../ledgeroot](../ledgeroot)). It is declared in `package.json`, and its README and history say so. Nothing here is a repackaged third-party engine.
+
+---
+
+## License
+
+**No license is declared in this repository yet.** The engine it reads is [MIT](../ledgeroot/LICENSE).
+
+<div align="center">
+
+### The industry built the locks; nobody built the keyring.
+
+**[Run it and check the evidence yourself.](#get-started)**
+
+📖 **[中文 README](./README.zh-CN.md)** · ⚙️ **[The engine](../ledgeroot)** · 🗺️ **[Roadmap](../ledgeroot/docs/roadmap.md)** · 🛡️ **[Threat landscape](../ledgeroot/docs/threat-landscape.md)**
+
+<sub>no backend · no telemetry · no private key · the evidence verifies without us</sub>
+
+</div>
