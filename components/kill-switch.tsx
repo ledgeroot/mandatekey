@@ -12,7 +12,15 @@ export function KillSwitch() {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch("/api/mandates/revoke", { method: "POST" });
+      const res = await fetch("/api/mandates/revoke", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      if (!res.ok) {
+        setResult("Kill switch failed.");
+        return;
+      }
       const data = (await res.json()) as { revoked: number };
       setResult(`Revoked ${data.revoked} mandate(s). The next payment will be denied.`);
       // The point of the kill switch is seeing the authorizations flip, so pull
