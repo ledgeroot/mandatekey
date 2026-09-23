@@ -164,8 +164,7 @@ node verify.mjs     # 退出码 0 verified · 1 tampered · 2 incomplete · 3 �
 | `LEDGEROOT_DB` | Ledgeroot SQLite 库路径（默认 `ledgeroot.sqlite`） |
 | `LEDGEROOT_SIGNING_KEY` | 收据签名种子（32 字节 hex）。引擎用它签，本仪表盘用它验归属，**两边必须一致**。不设 → 收据验证为 `incomplete` |
 | `LEDGEROOT_DRY_RUN` | `true` 会派生确定性临时密钥，seed 与仪表盘无需配置即可对上（**禁止用于真实支付**） |
-| `NEXT_PUBLIC_ANCHOR_ADDRESS` | 锚定合约地址，由浏览器读取以渲染锚定面板 |
-| `LEDGEROOT_RPC_URL` | Monad testnet RPC（默认 `https://testnet-rpc.monad.xyz`） |
+| `NEXT_PUBLIC_ANCHOR_ADDRESS` | Monad 主网上的锚定合约地址，由浏览器读取以渲染锚定面板。必须是引擎实际锚定的那个合约——不同链会报 root 不匹配 |
 
 ---
 
@@ -178,7 +177,7 @@ node verify.mjs     # 退出码 0 verified · 1 tampered · 2 incomplete · 3 �
 | **聚合是部分的** | 只读引擎的 `mandates` 表。AP2 导入的授权、本地策略与 x402 会话没有汇总进同一视图 |
 | **没有签发 UI** | 授权在写入侧签发（`ledgeroot_mandate_sign`）。仪表盘能撤销，但**不能签发**——"一句人话 + 一个确认键"是目标，**这里还没做** |
 | **ERC-8004 没有接** | 没有 agent 卡、没有声誉视图。引擎存了 `agentId` 字段；没有任何东西校验或展示它 |
-| **本仓库没有测试** | 只有 `npm run typecheck` 与 `npm run build`。测试在引擎那边（106 个） |
+| **本仓库没有测试** | 只有 `npm run typecheck` 与 `npm run build`。测试在引擎那边（129 个） |
 | **只能在本地跑** | 没有托管实例，评估它意味着把它跑起来。同时也意味着浏览器与数据库被假定在同一台机器上 |
 | **包含证明只覆盖一个 epoch** | 证明只发给最近一次锚定覆盖的那些收据；之后追加的要等下一次锚定 |
 | **它持有签名种子** | 验归属要推导签发方公钥，而引擎的 API 需要一个种子来做这件事。只读部署本该只持有公钥那一半 |

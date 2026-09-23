@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useReadContract } from "wagmi";
 import { ANCHOR_ABI, ANCHOR_ADDRESS } from "@/lib/anchor";
-import { EXPLORER_URL, monadTestnet } from "@/lib/chains";
+import { EXPLORER_URL, monadMainnet } from "@/lib/chains";
 import { onRefreshRequest } from "@/lib/refresh-bus";
 import { usePoll } from "@/lib/use-poll";
 
@@ -28,7 +28,7 @@ export function AnchorStatus() {
     address: ANCHOR_ADDRESS,
     abi: ANCHOR_ABI,
     functionName: "latestRoot",
-    chainId: monadTestnet.id,
+    chainId: monadMainnet.id,
     query: { enabled: configured },
   });
   const {
@@ -39,7 +39,7 @@ export function AnchorStatus() {
     address: ANCHOR_ADDRESS,
     abi: ANCHOR_ABI,
     functionName: "lastEpoch",
-    chainId: monadTestnet.id,
+    chainId: monadMainnet.id,
     query: { enabled: configured },
   });
   const { data: local } = usePoll<AnchorResponse>("/api/anchor", 5000);

@@ -164,8 +164,7 @@ A matching root with a mismatched epoch means the last anchor this ledger record
 | `LEDGEROOT_DB` | path to the Ledgeroot SQLite database (default `ledgeroot.sqlite`) |
 | `LEDGEROOT_SIGNING_KEY` | the receipt-signing seed (32-byte hex). The engine signs with it, this dashboard checks attribution against it, so **both sides must agree**. Unset → receipts verify as `incomplete` |
 | `LEDGEROOT_DRY_RUN` | `true` derives a deterministic throwaway key, so the seed and the dashboard line up with no secret to manage (**never for real payments**) |
-| `NEXT_PUBLIC_ANCHOR_ADDRESS` | anchor contract address, read by the browser for the Anchor panel |
-| `LEDGEROOT_RPC_URL` | Monad testnet RPC (default `https://testnet-rpc.monad.xyz`) |
+| `NEXT_PUBLIC_ANCHOR_ADDRESS` | anchor contract address on Monad mainnet, read by the browser for the Anchor panel. It must be the contract the engine anchored to — different chains report a root mismatch |
 
 ---
 
@@ -178,7 +177,7 @@ The honest section. These are limits of the **current implementation**, not a re
 | **Aggregation is partial** | Only the engine's `mandates` table is read. AP2-imported authorizations, local policy and x402 sessions are not folded into the same view |
 | **No issuance UI** | Authorizations are signed on the write side (`ledgeroot_mandate_sign`). The dashboard can revoke, but it cannot issue — "one sentence and one confirm key" is the target and is **not built here yet** |
 | **ERC-8004 is not wired up** | There is no agent card and no reputation view. The engine stores an `agentId` field; nothing validates or displays it |
-| **No test suite in this repository** | `npm run typecheck` and `npm run build` only. The engine carries the tests (106 of them) |
+| **No test suite in this repository** | `npm run typecheck` and `npm run build` only. The engine carries the tests (129 of them) |
 | **Runs locally only** | There is no hosted instance, so evaluating it means running it. It also means the browser and the database are expected to be on the same machine |
 | **Inclusion proofs cover one epoch** | Proofs are issued for the receipts the latest anchor covers. Receipts appended afterwards wait for the next anchor |
 | **It holds the signing seed** | Checking attribution means deriving the issuer's public key, and the engine's API takes a seed to do that. A reader-only deployment should hold only the public half |

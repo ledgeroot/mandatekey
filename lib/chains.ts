@@ -1,21 +1,26 @@
 import { defineChain } from "viem";
 
-/** Block explorer used to link an anchor back to its transaction. */
-export const EXPLORER_URL = "https://testnet.monadexplorer.com";
-
-/** Monad Testnet (chainId 10143). RPC is overridable at deploy time. */
-export const monadTestnet = defineChain({
-  id: 10143,
-  name: "Monad Testnet",
+/**
+ * Monad mainnet (chainId 143) — the chain the live anchor contract is on.
+ *
+ * The Anchor panel reads `latestRoot` / `lastEpoch` straight from the browser,
+ * so this has to be the same chain the engine anchored to. It mirrors the
+ * engine's `monadMainnet` in `ledgeroot/src/chains.ts`.
+ */
+export const monadMainnet = defineChain({
+  id: 143,
+  name: "Monad",
   nativeCurrency: { name: "MON", symbol: "MON", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://testnet-rpc.monad.xyz"] },
+    default: { http: ["https://rpc.monad.xyz"] },
   },
   blockExplorers: {
     default: {
-      name: "Monad Testnet Explorer",
-      url: EXPLORER_URL,
+      name: "Monad Explorer",
+      url: "https://monadexplorer.com",
     },
   },
-  testnet: true,
 });
+
+/** Block explorer used to link an anchor back to its transaction. */
+export const EXPLORER_URL = "https://monadexplorer.com";
