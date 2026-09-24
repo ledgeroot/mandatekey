@@ -14,6 +14,7 @@ interface AnchorResponse {
     epoch: number;
     root: string;
     txHash?: string;
+    contract?: string;
     receiptCount: number | null;
   } | null;
 }
@@ -67,6 +68,16 @@ export function AnchorStatus() {
   const epochMatches = Boolean(
     anchor && chainEpochNumber !== null && anchor.epoch === chainEpochNumber,
   );
+  // The record names the contract it was submitted to. When that is not the one
+  // this card reads, the root and epoch verdicts below are comparing a ledger's
+  // root against a contract that was never meant to hold it — so a mismatch is
+  // expected rather than evidence of drift, and it is shown first for that
+  // reason. Absent on records written before the column existed, where the
+  // target is simply unknown.
+  const contractMatches =
+    anchor?.contract === undefined || !configured
+      ? null
+      : anchor.contract.toLowerCase() === ANCHOR_ADDRESS.toLowerCase();
   const unreadable = rootUnreadable || epochUnreadable;
 
   return (
@@ -93,6 +104,17 @@ export function AnchorStatus() {
             <p className="font-medium text-amber-400">Could not read the anchor contract</p>
           ) : (
             <>
+              {contractMatches === null ? null : (
+                <p
+                  className={`font-medium ${
+                    contractMatches ? "text-emerald-400" : "text-amber-400"
+                  }`}
+                >
+                  {contractMatches
+                    ? "✓ Record was anchored to this contract"
+                    : "⚠ Record was anchored to a different contract"}
+                </p>
+              )}
               <p className={`font-medium ${rootMatches ? "text-emerald-400" : "text-amber-400"}`}>
                 {rootMatches
                   ? "✓ Root matches the on-chain latestRoot"
