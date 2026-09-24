@@ -6,13 +6,14 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "MandateKey",
   description:
-    "The keyring for agent authorizations — who can spend, how much, until when.",
+    "Which agents are authorized, to spend what, until when, and the evidence that they did.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
+    // `lang` is corrected on the client when a stored locale is applied.
     <html lang="en">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
+      <body className="bg-page text-ink font-sans min-h-screen antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

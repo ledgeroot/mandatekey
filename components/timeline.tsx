@@ -2,18 +2,14 @@
 
 import { useMemo } from "react";
 import type { MandateRecord, ReceiptConsistency } from "ledgeroot";
+import { RowSkeletons } from "@/components/skeleton";
+import { dateLocale, useLocale, useT } from "@/lib/i18n";
 import { toggleSelectedMandate, useSelectedMandate } from "@/lib/selection-bus";
 import { usePoll } from "@/lib/use-poll";
 
 interface ConsistencyResponse {
   items: ReceiptConsistency[];
   mandates: MandateRecord[];
-}
-
-function badge(violation: boolean, status: "paid" | "denied") {
-  if (violation) return "border-red-700/60 bg-red-950/40";
-  if (status === "denied") return "border-red-900/50 bg-red-950/30";
-  return "border-zinc-800 bg-zinc-900";
 }
 
 interface TaskSummary {
@@ -23,7 +19,12 @@ interface TaskSummary {
   deniedCount: number;
 }
 
+const CHIP_PAID = "border-ok-line bg-ok-soft text-ok";
+const CHIP_DENIED = "border-bad-line bg-bad-soft text-bad";
+
 export function Timeline() {
+  const t = useT();
+  const locale = useLocale();
   const { data, loading, error } = usePoll<ConsistencyResponse>("/api/consistency");
   const items = useMemo(() => data?.items ?? [], [data]);
   const selected = useSelectedMandate();
@@ -55,115 +56,140 @@ export function Timeline() {
   }, [items]);
 
   return (
-    <div className="rounded-xl border border-zinc-800 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-sm font-medium text-zinc-300">一致性时间线 · Timeline</h2>
-        {selected ? (
-          <button
-            type="button"
-            onClick={() => toggleSelectedMandate(selected)}
-            className="shrink-0 text-xs font-medium text-emerald-400 hover:underline"
-          >
-            追踪 {selected} · 清除
-          </button>
-        ) : null}
-      </div>
+    <section className="bg-surface p-4 lg:p-5">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="label">{t("timeline.section")}</h2>
+        <div className="flex items-center gap-3">
+          {selected ? (
+            <button
+              type="button"
+              onClick={() => toggleSelectedMandate(selected)}
+              className="text-accent text-[0.6875rem] font-semibold hover:underline"
+            >
+              {t("timeline.tracing", { id: selected })} · {t("timeline.clear")}
+            </button>
+          ) : null}
+          {loading || error ? null : (
+            <span className="mono text-ink-faint text-[0.6875rem]">{items.length}</span>
+          )}
+        </div>
+      </header>
 
       {tasks.length > 0 ? (
-        <div className="mt-3 rounded-lg bg-zinc-900/60 p-3">
-          <p className="text-xs font-medium text-zinc-400">按任务聚合 · Tasks</p>
-          <ul className="mt-2 space-y-1">
-            {tasks.map((task) => (
-              <li
-                key={task.taskId}
-                className="flex items-center justify-between gap-2 text-xs text-zinc-400"
-              >
-                <span className="truncate">{task.taskId}</span>
-                <span className="shrink-0">
-                  {task.count} 笔 · {task.paidTotal.toFixed(3)} USDC
-                  {task.deniedCount > 0 ? ` · ${task.deniedCount} 拦截` : ""}
-                </span>
-              </li>
-            ))}
-          </ul>
+        <div className="divide-line mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b pb-2">
+          <span className="label">{t("timeline.byTask")}</span>
+          {tasks.map((task) => (
+            <span key={task.taskId} className="text-ink-muted text-[0.6875rem]">
+              <span className="mono text-ink">{task.taskId}</span>{" "}
+              {t("timeline.taskLine", { count: task.count, total: task.paidTotal.toFixed(3) })}
+              {task.deniedCount > 0
+                ? t("timeline.taskBlocked", { count: task.deniedCount })
+                : ""}
+            </span>
+          ))}
         </div>
       ) : null}
 
       {loading ? (
-        <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+        <div className="mt-3">
+          <RowSkeletons rows={3} />
+        </div>
       ) : error ? (
-        <p className="mt-3 text-sm text-red-400">无法读取收据：{error}</p>
+        <p className="text-bad mt-3 text-xs">{t("timeline.error", { error })}</p>
       ) : items.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">
-          No receipts yet. Run an agent payment to see it here.
-        </p>
+        <p className="text-ink-muted mt-3 text-xs">{t("timeline.empty")}</p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul className="divide-line mt-1 divide-y">
           {items.map(({ receipt, violation, reasons, cumulativeSpent, mandateTotalLimit }) => {
             const mandateId = receipt.mandateId;
             const traced = mandateId !== undefined && mandateId === selected;
             // Nothing is hidden: a receipt outside the traced mandate stays on
             // screen but recedes, so switching mandates never looks like the
-            // ledger changed underneath you.
+            // ledger changed underneath the reader.
             const receded = selected !== null && !traced;
+            const blocked = receipt.status === "denied";
 
             return (
               <li
                 key={receipt.id}
-                className={`rounded-lg border p-3 ${badge(violation, receipt.status)} ${
-                  traced ? "ring-1 ring-emerald-500/60" : ""
-                } ${receded ? "opacity-40" : ""}`}
+                className={`ease-out-quint transition-opacity duration-150 ${
+                  receded ? "opacity-40" : ""
+                }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div
+                  className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 px-1 py-3 ${
+                    traced ? "traced rounded-sm" : "hover:bg-sunken ease-out-quint transition-colors duration-150"
+                  }`}
+                >
+                  <span
+                    className={`chip mt-0.5 ${violation || blocked ? CHIP_DENIED : CHIP_PAID}`}
+                  >
+                    {violation
+                      ? t("timeline.status.overAuthorized")
+                      : blocked
+                        ? t("timeline.status.denied")
+                        : t("timeline.status.paid")}
+                  </span>
+
                   <div className="min-w-0">
-                    <p className="truncate text-sm">{receipt.segments.intent.text}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {receipt.counterparty ?? "-"} · {receipt.amount ?? "-"} USDC ·{" "}
-                      {new Date(receipt.timestamp).toLocaleTimeString()}
+                    <p className="truncate text-[0.8125rem] leading-snug">
+                      {receipt.segments.intent.text}
                     </p>
+                    <p className="text-ink-muted mt-0.5 truncate text-xs">
+                      {receipt.counterparty ?? "-"}
+                      {receipt.endpoint ? ` ${receipt.endpoint}` : ""}
+                      {" · "}
+                      {new Date(receipt.timestamp).toLocaleTimeString(dateLocale(locale))}
+                    </p>
+
                     {mandateId ? (
                       <button
                         type="button"
-                        title={summaryById.get(mandateId) ?? undefined}
                         onClick={() => toggleSelectedMandate(mandateId)}
-                        className={`mt-1 block max-w-full truncate text-left text-xs hover:underline ${
-                          traced ? "text-emerald-400" : "text-zinc-500"
+                        title={summaryById.get(mandateId) ?? t("mandates.trace")}
+                        className={`ease-out-quint mono mt-1 block max-w-full truncate text-left text-[0.6875rem] transition-colors duration-150 hover:underline ${
+                          traced ? "text-accent" : "text-ink-faint hover:text-accent"
                         }`}
                       >
-                        mandate · {mandateId}
+                        {t("timeline.mandate")} · {mandateId}
                       </button>
                     ) : null}
+
                     {receipt.taskId ? (
-                      <p className="mt-1 text-xs text-zinc-600">task · {receipt.taskId}</p>
-                    ) : null}
-                    {cumulativeSpent && mandateTotalLimit ? (
-                      <p className="mt-1 text-xs text-zinc-500">
-                        累计 {cumulativeSpent} / 上限 {mandateTotalLimit} USDC
+                      <p className="mono text-ink-faint mt-0.5 truncate text-[0.6875rem]">
+                        {t("timeline.task")} · {receipt.taskId}
                       </p>
                     ) : null}
+
                     {violation ? (
-                      <p className="mt-1 text-xs font-medium text-red-400">
-                        越权：{reasons.join("；")}
+                      <p className="text-bad mt-1 text-xs font-medium">
+                        {t("timeline.overAuthorized", { reasons: reasons.join("; ") })}
                       </p>
-                    ) : receipt.status === "denied" ? (
-                      <p className="mt-1 text-xs text-red-400/80">{receipt.reason}</p>
+                    ) : blocked ? (
+                      <p className="text-bad mt-1 text-xs">{receipt.reason}</p>
                     ) : null}
                   </div>
-                  <span
-                    className={`shrink-0 text-xs font-medium ${
-                      violation || receipt.status === "denied"
-                        ? "text-red-400"
-                        : "text-emerald-400"
-                    }`}
-                  >
-                    {receipt.status === "paid" ? (violation ? "越权" : "paid") : "已拦截"}
-                  </span>
+
+                  <div className="text-right">
+                    <p className="mono text-[0.8125rem] leading-snug">
+                      {receipt.amount ?? "-"}
+                      <span className="text-ink-faint ml-1 text-[0.6875rem]">USDC</span>
+                    </p>
+                    {cumulativeSpent && mandateTotalLimit ? (
+                      <p className="mono text-ink-faint mt-1 text-[0.6875rem]">
+                        {t("timeline.cumulative", {
+                          spent: cumulativeSpent,
+                          limit: mandateTotalLimit,
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
-    </div>
+    </section>
   );
 }

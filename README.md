@@ -27,17 +27,30 @@ It reads the local Ledgeroot SQLite database and the anchor contract. **There is
 
 ## See it
 
-Five panels, against a ledger that has one real settlement in it:
+Four bands, against a ledger that has one real settlement in it:
 
-| Panel | What it shows |
+| Band | What it shows |
 |---|---|
-| **Mandates** | every authorization with its per-payment ceiling, cumulative ceiling, expiry and spend so far. A revoked one **stays on screen and reads `已撤销`** — a row that vanishes tells the user less than one that is visibly dead |
-| **Timeline** | the receipt stream, with over-authorization flagged red, denials carrying the policy that stopped them, and payments grouped by task (`N payments · total · N blocked`) |
-| **Anchor** | the local anchor record next to the chain's `latestRoot` **and** `lastEpoch` — two independent verdicts, because a matching root with a stale epoch is exactly how a record drifts |
-| **Verify** | `verified` / `tampered` / `incomplete`, with the issues that produced the verdict |
-| **Evidence** | one zip: receipts + anchor record + per-receipt inclusion proofs + JWKS + a verifier you can run |
+| **Header** | the name, the one-line claim, the language control, and the kill switch. The kill switch is the only loud element on the page, deliberately |
+| **Status strip** | three hairline-divided readings of the same ledger: **Anchoring** (epoch, coverage, root, and three chain verdicts: root, epoch, and which contract the record was submitted to), **Verification** (`verified` / `tampered` / `incomplete`, with the issues that produced the verdict), and **Evidence** (one zip: receipts + anchor record + per-receipt inclusion proofs + JWKS + a verifier you can run) |
+| **Authorizations** | every authorization with its per-payment ceiling, cumulative ceiling, expiry and spend so far. A revoked one stays on screen and reads `revoked`; an expired one is marked rather than hidden, because a row that vanishes tells the user less than one that is visibly dead |
+| **Timeline** | the receipt stream: status first, then the intent, the counterparty and endpoint, the mandate it was paid under, and the policy reason for anything blocked. Over-authorization is flagged with its reasons |
 
-The ledger views poll every 3 seconds, the anchor card every 5, so receipts appear as the agent spends. Actions are not made to wait for a poll: the kill switch pulls every view forward the moment it lands.
+Every receipt names its mandate, and clicking either side traces the pair: that
+authorization's receipts take an accent marker while the rest recede. Nothing is
+hidden, so switching never looks like the ledger changed underneath you.
+
+**English is the default**, and 中文 is one click away in the header; the choice is
+remembered locally and `<html lang>` follows it. Engine output is never translated:
+policy reasons, status values and every hash stay verbatim, because they are the
+evidence.
+
+The ledger views poll every 3 seconds, the anchoring cell every 5, so receipts appear
+as the agent spends. Actions are not made to wait for a poll: the kill switch pulls
+every view forward the moment it lands.
+
+The design decisions and the token system are in [PRODUCT.md](./PRODUCT.md) and
+[DESIGN.md](./DESIGN.md).
 
 ---
 
@@ -198,13 +211,20 @@ app/
   api/export          the evidence bundle (zip)
   api/anchor          epoch root + latest anchor record
 components/
-  mandate-list        authorizations, spend progress, revoked state
-  timeline            receipt stream, task grouping, violation flags
+  app-header          name, tagline, language control, kill switch
+  status-strip        the three hairline-divided cells above the work surface
+  mandate-list        authorizations, spend progress, revoked/expired state
+  timeline            receipt stream, task summary, violation flags, mandate tracing
   kill-switch         revoke everything, immediately
-  anchor-status       on-chain anchoring + both consistency verdicts (wagmi)
+  anchor-status       on-chain anchoring + the three chain verdicts (wagmi)
   verification-panel  the tri-state verdict
   evidence-export     the zip download
+  language-toggle     EN / 中文 segmented control
+  skeleton            loading placeholders, never spinners
 lib/
+  i18n.ts             message catalogue (en/zh) + locale store; en is the default
+  format.ts           middle-elision for hashes
+  selection-bus.ts    which authorization is being traced
   wagmi.ts chains.ts  wallet/chain config + explorer link
   anchor.ts           anchor ABI + address
   use-poll.ts         interval polling for every view

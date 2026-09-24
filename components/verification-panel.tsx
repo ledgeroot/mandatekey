@@ -1,6 +1,8 @@
 "use client";
 
 import type { Issue, VerificationStatus } from "ledgeroot";
+import { Skeleton } from "@/components/skeleton";
+import { useT } from "@/lib/i18n";
 import { usePoll } from "@/lib/use-poll";
 
 interface VerifyResponse {
@@ -11,49 +13,55 @@ interface VerifyResponse {
 }
 
 const TONE: Record<VerificationStatus, string> = {
-  verified: "border-emerald-800/60 bg-emerald-950/30 text-emerald-400",
-  tampered: "border-red-800/60 bg-red-950/30 text-red-400",
-  incomplete: "border-amber-800/60 bg-amber-950/30 text-amber-400",
-};
-
-const MEANING: Record<VerificationStatus, string> = {
-  verified: "Every receipt recomputes to its hash and every signature checks out.",
-  tampered: "Bytes were checked and do not match — something was changed.",
-  incomplete: "Evidence is missing, so a check could not run. Not the same as tampered.",
+  verified: "border-ok-line bg-ok-soft text-ok",
+  tampered: "border-bad-line bg-bad-soft text-bad",
+  incomplete: "border-warn-line bg-warn-soft text-warn",
 };
 
 export function VerificationPanel() {
+  const t = useT();
   const { data, loading, error } = usePoll<VerifyResponse>("/api/verify");
 
   return (
-    <div className="rounded-xl border border-zinc-800 p-5">
-      <h2 className="text-sm font-medium text-zinc-300">离线三态验证 · Verify</h2>
+    <div className="bg-surface px-4 py-4 lg:px-5">
+      <h2 className="label">{t("verify.section")}</h2>
+
       {loading ? (
-        <p className="mt-3 text-sm text-zinc-500">Loading…</p>
+        <div className="mt-3 space-y-2">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-2.5 w-4/5" />
+        </div>
       ) : error ? (
-        <p className="mt-3 text-sm text-red-400">无法验证：{error}</p>
+        <p className="text-bad mt-2 text-xs">{error}</p>
       ) : !data ? null : (
-        <>
-          <div
-            className={`mt-3 inline-flex items-center rounded-lg border px-3 py-1 text-sm font-semibold ${TONE[data.status]}`}
-          >
-            {data.status}
+        <div className="mt-2 space-y-2">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/* The engine's own status word, never translated: it is the verdict. */}
+            <span className={`chip ${TONE[data.status]}`}>{data.status}</span>
+            <span className="text-ink-muted text-xs">
+              {data.anchor
+                ? t("verify.anchored", { count: data.receiptCount, epoch: data.anchor.epoch })
+                : t("verify.unanchored", { count: data.receiptCount })}
+            </span>
           </div>
-          <p className="mt-2 text-xs text-zinc-500">{MEANING[data.status]}</p>
-          <p className="mt-2 text-xs text-zinc-400">
-            {data.receiptCount} 张收据 ·{" "}
-            {data.anchor ? `锚定 epoch ${data.anchor.epoch}` : "尚未锚定"}
+
+          <p className="text-ink-muted max-w-[52ch] text-xs">
+            {t(`verify.meaning.${data.status}`)}
           </p>
+
           {data.issues.length > 0 ? (
-            <ul className="mt-2 space-y-1">
-              {data.issues.slice(0, 5).map((issue, index) => (
-                <li key={index} className="text-xs text-amber-400">
-                  [{issue.kind}] {issue.message}
-                </li>
-              ))}
-            </ul>
+            <div>
+              <p className="label">{t("verify.issues", { count: data.issues.length })}</p>
+              <ul className="mt-1 space-y-0.5">
+                {data.issues.slice(0, 5).map((issue, index) => (
+                  <li key={index} className="text-warn text-[0.6875rem]">
+                    <span className="mono">[{issue.kind}]</span> {issue.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   );

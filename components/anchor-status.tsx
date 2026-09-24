@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useReadContract } from "wagmi";
 import { ANCHOR_ABI, ANCHOR_ADDRESS } from "@/lib/anchor";
 import { EXPLORER_URL, monadMainnet } from "@/lib/chains";
+import { elide } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { onRefreshRequest } from "@/lib/refresh-bus";
 import { usePoll } from "@/lib/use-poll";
 
@@ -19,7 +21,17 @@ interface AnchorResponse {
   } | null;
 }
 
+function Verdict({ ok, text }: { ok: boolean; text: string }) {
+  return (
+    <li className={`flex items-start gap-1.5 text-[0.6875rem] ${ok ? "text-ok" : "text-warn"}`}>
+      <span aria-hidden>{ok ? "✓" : "✗"}</span>
+      <span>{text}</span>
+    </li>
+  );
+}
+
 export function AnchorStatus() {
+  const t = useT();
   const configured = ANCHOR_ADDRESS.length === 42;
   const {
     data: chainRoot,
@@ -62,18 +74,16 @@ export function AnchorStatus() {
   const rootMatches = Boolean(anchor && chainRootHex && anchor.root.toLowerCase() === chainRootHex);
   // The contract owns the epoch sequence, so its counter and our record should
   // agree. A disagreement means the last anchor this ledger recorded is not the
-  // last one the contract saw — a stale record, or a second machine anchoring
-  // with the same key.
+  // last one the contract saw, a stale record, or a second machine anchoring.
   const chainEpochNumber = typeof chainEpoch === "bigint" ? Number(chainEpoch) : null;
   const epochMatches = Boolean(
     anchor && chainEpochNumber !== null && anchor.epoch === chainEpochNumber,
   );
   // The record names the contract it was submitted to. When that is not the one
-  // this card reads, the root and epoch verdicts below are comparing a ledger's
-  // root against a contract that was never meant to hold it — so a mismatch is
-  // expected rather than evidence of drift, and it is shown first for that
-  // reason. Absent on records written before the column existed, where the
-  // target is simply unknown.
+  // read here, the root and epoch verdicts below compare a ledger's root against
+  // a contract that was never meant to hold it, so a disagreement is expected
+  // rather than evidence of drift. Absent on records written before the column
+  // existed, where the target is simply unknown.
   const contractMatches =
     anchor?.contract === undefined || !configured
       ? null
@@ -81,62 +91,73 @@ export function AnchorStatus() {
   const unreadable = rootUnreadable || epochUnreadable;
 
   return (
-    <div className="rounded-xl border border-zinc-800 p-5">
-      <h2 className="text-sm font-medium text-zinc-300">链上锚定 · Anchor</h2>
+    <div className="bg-surface px-4 py-4 lg:px-5">
+      <h2 className="label">{t("anchor.section")}</h2>
+
       {!configured ? (
-        <p className="mt-3 text-sm text-zinc-500">
-          No anchor contract configured (NEXT_PUBLIC_ANCHOR_ADDRESS).
-        </p>
+        <p className="text-ink-muted mt-2 text-xs">{t("anchor.notConfigured")}</p>
       ) : !anchor ? (
-        <p className="mt-3 text-sm text-zinc-500">
-          This ledger is not anchored yet. Run{" "}
-          <code className="rounded bg-zinc-900 px-1">npm run anchor</code> in the ledgeroot repo
-          and this card lights up.
-        </p>
+        <p className="text-ink-muted mt-2 text-xs">{t("anchor.none")}</p>
       ) : (
-        <div className="mt-3 space-y-1.5 text-xs">
-          <p className="text-zinc-400">
-            epoch {anchor.epoch} · covers {anchor.receiptCount ?? "?"} of{" "}
-            {local?.receiptCount ?? "?"} receipts
-          </p>
-          <p className="break-all text-zinc-500">root {anchor.root}</p>
+        <div className="mt-2 space-y-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+            <span className="mono text-[0.8125rem]">
+              {t("anchor.epoch", { epoch: anchor.epoch })}
+            </span>
+            <span className="text-ink-muted text-xs">
+              {t("anchor.covers", {
+                covered: anchor.receiptCount ?? "?",
+                total: local?.receiptCount ?? "?",
+              })}
+            </span>
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            <span className="label shrink-0">{t("anchor.root")}</span>
+            <span className="mono text-ink-muted truncate text-[0.6875rem]" title={anchor.root}>
+              {elide(anchor.root)}
+            </span>
+          </div>
+
           {unreadable ? (
-            <p className="font-medium text-amber-400">Could not read the anchor contract</p>
+            <p className="text-warn text-xs">{t("anchor.unreadable")}</p>
           ) : (
-            <>
+            <ul className="space-y-0.5">
+              <Verdict
+                ok={rootMatches}
+                text={rootMatches ? t("anchor.rootMatch") : t("anchor.rootMismatch")}
+              />
+              <Verdict
+                ok={epochMatches}
+                text={
+                  epochMatches
+                    ? t("anchor.epochMatch")
+                    : t("anchor.epochMismatch", {
+                        local: anchor.epoch,
+                        chain: chainEpochNumber ?? "?",
+                      })
+                }
+              />
               {contractMatches === null ? null : (
-                <p
-                  className={`font-medium ${
-                    contractMatches ? "text-emerald-400" : "text-amber-400"
-                  }`}
-                >
-                  {contractMatches
-                    ? "✓ Record was anchored to this contract"
-                    : "⚠ Record was anchored to a different contract"}
-                </p>
+                <Verdict
+                  ok={contractMatches}
+                  text={
+                    contractMatches ? t("anchor.contractMatch") : t("anchor.contractMismatch")
+                  }
+                />
               )}
-              <p className={`font-medium ${rootMatches ? "text-emerald-400" : "text-amber-400"}`}>
-                {rootMatches
-                  ? "✓ Root matches the on-chain latestRoot"
-                  : "⚠ Root does not match the on-chain latestRoot"}
-              </p>
-              <p className={`font-medium ${epochMatches ? "text-emerald-400" : "text-amber-400"}`}>
-                {epochMatches
-                  ? "✓ Epoch matches the on-chain counter"
-                  : `⚠ Epoch differs from the on-chain counter (local ${anchor.epoch}, chain ${
-                      chainEpochNumber ?? "?"
-                    })`}
-              </p>
-            </>
+            </ul>
           )}
+
           {anchor.txHash ? (
             <a
-              className="block break-all text-sky-400 hover:underline"
+              className="mono text-accent block truncate text-[0.6875rem] hover:underline"
               href={`${EXPLORER_URL}/tx/${anchor.txHash}`}
               target="_blank"
               rel="noreferrer"
+              title={t("anchor.explorer")}
             >
-              {anchor.txHash}
+              {elide(anchor.txHash)}
             </a>
           ) : null}
         </div>

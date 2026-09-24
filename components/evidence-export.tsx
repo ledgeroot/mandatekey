@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/lib/i18n";
 
 export function EvidenceExport() {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,22 +29,18 @@ export function EvidenceExport() {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 p-5">
-      <h2 className="text-sm font-medium text-zinc-300">可验证证据包 · Evidence</h2>
-      <p className="mt-3 text-sm text-zinc-500">
-        Receipts + anchor record + JWKS + a standalone verifier, as one zip. Unzip it and run{" "}
-        <code className="rounded bg-zinc-900 px-1">node verify.mjs</code> — no server, no
-        ledgeroot install on our side.
-      </p>
+    <div className="bg-surface px-4 py-4 lg:px-5">
+      <h2 className="label">{t("evidence.section")}</h2>
+      <p className="text-ink-muted mt-2 max-w-[58ch] text-xs">{t("evidence.body")}</p>
       <button
         type="button"
         onClick={download}
         disabled={busy}
-        className="mt-4 rounded-lg bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white disabled:opacity-50"
+        className="border-line-strong text-ink ease-out-quint mt-3 rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 hover:bg-sunken disabled:opacity-50"
       >
-        {busy ? "Exporting…" : "导出证据包"}
+        {busy ? t("evidence.busy") : t("evidence.action")}
       </button>
-      {error ? <p className="mt-2 text-xs text-red-400">导出失败：{error}</p> : null}
+      {error ? <p className="text-bad mt-2 text-xs">{t("evidence.failed", { error })}</p> : null}
     </div>
   );
 }
