@@ -115,7 +115,6 @@ cd ../ledgeroot && npm run anchor -- --db ./ledgeroot.sqlite
 | `README.txt` | 一次通过**建立**了什么、**没有**建立什么 |
 
 ```bash
-npm install ledgeroot
 node verify.mjs     # 退出码 0 verified · 1 tampered · 2 incomplete · 3 无法读取
 ```
 
@@ -182,11 +181,10 @@ node verify.mjs     # 退出码 0 verified · 1 tampered · 2 incomplete · 3 �
 | **聚合是部分的** | 只读引擎的 `mandates` 表。AP2 导入的授权、本地策略与 x402 会话没有汇总进同一视图 |
 | **没有签发 UI** | 授权在写入侧签发（`ledgeroot_mandate_sign`）。仪表盘能撤销，但**不能签发**——"一句人话 + 一个确认键"是目标，**这里还没做** |
 | **ERC-8004 没有接** | 没有 agent 卡、没有声誉视图。引擎存了 `agentId` 字段；没有任何东西校验或展示它 |
-| **本仓库没有测试** | 只有 `npm run typecheck` 与 `npm run build`。测试在引擎那边（129 个） |
+| **本仓库没有测试** | 只有 `npm run typecheck` 与 `npm run build`。测试在引擎那边（134 个） |
 | **只能在本地跑** | 没有托管实例，评估它意味着把它跑起来。同时也意味着浏览器与数据库被假定在同一台机器上 |
 | **包含证明只覆盖一个 epoch** | 证明只发给最近一次锚定覆盖的那些收据；之后追加的要等下一次锚定 |
 | **它持有签名种子** | 验归属要推导签发方公钥，而引擎的 API 需要一个种子来做这件事。只读部署本该只持有公钥那一半 |
-| **本仓库未声明许可证** | 它读取的引擎是 MIT |
 | **只读，只有一个例外** | 仪表盘只写一样东西：熔断按钮背后的本地 `revoked` 标记 |
 
 ---
@@ -237,7 +235,7 @@ agent/demo.mjs        演示数据 seed，走引擎
 
 ## 许可证
 
-**本仓库尚未声明许可证。** 它读取的引擎是 [MIT](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE)。
+**MIT**，与它读取的[引擎](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE)一致。
 
 <div align="center">
 

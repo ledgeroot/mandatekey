@@ -123,7 +123,6 @@ One click produces `ledgeroot-evidence.zip`:
 | `README.txt` | what a pass does and does not establish |
 
 ```bash
-npm install ledgeroot
 node verify.mjs     # exit 0 verified · 1 tampered · 2 incomplete · 3 unreadable
 ```
 
@@ -190,11 +189,10 @@ The honest section. These are limits of the **current implementation**, not a re
 | **Aggregation is partial** | Only the engine's `mandates` table is read. AP2-imported authorizations, local policy and x402 sessions are not folded into the same view |
 | **No issuance UI** | Authorizations are signed on the write side (`ledgeroot_mandate_sign`). The dashboard can revoke, but it cannot issue — "one sentence and one confirm key" is the target and is **not built here yet** |
 | **ERC-8004 is not wired up** | There is no agent card and no reputation view. The engine stores an `agentId` field; nothing validates or displays it |
-| **No test suite in this repository** | `npm run typecheck` and `npm run build` only. The engine carries the tests (129 of them) |
+| **No test suite in this repository** | `npm run typecheck` and `npm run build` only. The engine carries the tests (134 of them) |
 | **Runs locally only** | There is no hosted instance, so evaluating it means running it. It also means the browser and the database are expected to be on the same machine |
 | **Inclusion proofs cover one epoch** | Proofs are issued for the receipts the latest anchor covers. Receipts appended afterwards wait for the next anchor |
 | **It holds the signing seed** | Checking attribution means deriving the issuer's public key, and the engine's API takes a seed to do that. A reader-only deployment should hold only the public half |
-| **No license declared in this repository** | The engine it reads is MIT |
 | **Read-only, with one exception** | The dashboard writes exactly one thing: the local `revoked` flag behind the kill switch |
 
 ---
@@ -245,7 +243,7 @@ This repository depends on the **`ledgeroot`** npm package, which is **our own o
 
 ## License
 
-**No license is declared in this repository yet.** The engine it reads is [MIT](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE).
+**MIT**, like the [engine](https://github.com/ledgeroot/ledgeroot/blob/main/LICENSE) it reads.
 
 <div align="center">
 
